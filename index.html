@@ -1,0 +1,85 @@
+
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BOLOGNA BOARDGAME SOCIETY</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Metamorphous&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+        }
+        .font-fantasy {
+            font-family: 'Metamorphous', cursive;
+        }
+        .glass {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .menu-solid {
+            background: #1e293b !important; /* Colore solido senza trasparenza */
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.05);
+            z-index: 100;
+        }
+        
+        @keyframes participant-pop {
+            0% { opacity: 0; transform: scale(0.5) translateY(10px); }
+            70% { transform: scale(1.05) translateY(-2px); }
+            100% { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        
+        .animate-participant {
+            animation: participant-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+
+        @keyframes count-bump {
+            0% { transform: scale(1); color: #6366f1; }
+            50% { transform: scale(1.4); color: #818cf8; }
+            100% { transform: scale(1); }
+        }
+
+        .animate-count {
+            display: inline-block;
+            animation: count-bump 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes highlight-glow {
+            0% { box-shadow: 0 0 0 0 rgba(79, 70, 229, 0); }
+            50% { box-shadow: 0 0 15px 2px rgba(79, 70, 229, 0.6); }
+            100% { box-shadow: 0 0 0 0 rgba(79, 70, 229, 0); }
+        }
+
+        .animate-highlight {
+            animation: highlight-glow 1.5s ease-in-out infinite;
+        }
+
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "@google/genai": "https://esm.sh/@google/genai@^1.37.0",
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react": "https://esm.sh/react@^19.2.3",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/"
+  }
+}
+</script>
+</head>
+<body>
+    <div id="root"></div>
+</body>
+</html>
