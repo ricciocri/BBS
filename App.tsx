@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import Header from './components/Header';
 import GameCard from './components/GameCard';
@@ -40,7 +39,26 @@ const App: React.FC = () => {
   const [isSyncing, setIsSyncing] = useState(false);
   const [currentUser, setCurrentUser] = useState<Player | null>(null);
 
-  // Inizializzazione dati dal "DB"
+  // Stati per la gestione della navigazione e delle azioni post-login
+  const [view, setView] = useState<View>('home');
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
+  const [selectedProposalId, setSelectedProposalId] = useState<string | null>(null);
+  const [pendingAction, setPendingAction] = useState<{ type: 'join' | 'interest', id: string } | null>(null);
+
+  const [rankingPeriod, setRankingPeriod] = useState<RankingPeriod>('daily');
+  const [sortOption, setSortOption] = useState<SortType>('session');
+  const [groupOption, setGroupOption] = useState<GroupType>('none');
+  const [search, setSearch] = useState('');
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [advancedFilters, setAdvancedFilters] = useState<AdvancedFilterState>(initialAdvancedFilters);
+  const [editingTable, setEditingTable] = useState<Partial<GameTable> | null>(null);
+  const [editingProposal, setEditingProposal] = useState<Partial<GameProposal> | null>(null);
+  const [prefilledPlayers, setPrefilledPlayers] = useState<Player[] | null>(null);
+
+  // Inizializzazione dati
   useEffect(() => {
     const initData = async () => {
       setIsLoading(true);
@@ -62,27 +80,21 @@ const App: React.FC = () => {
     initData();
   }, []);
 
-  const [view, setView] = useState<View>('home');
-  const [rankingPeriod, setRankingPeriod] = useState<RankingPeriod>('daily');
-  const [feedPeriod, setFeedPeriod] = useState<RankingPeriod>('all');
-  const [sortOption, setSortOption] = useState<SortType>('session');
-  const [groupOption, setGroupOption] = useState<GroupType>('none');
-
-  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
-  const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
-  const [selectedProposalId, setSelectedProposalId] = useState<string | null>(null);
-  const [editingTable, setEditingTable] = useState<Partial<GameTable> | null>(null);
-  const [editingProposal, setEditingProposal] = useState<Partial<GameProposal> | null>(null);
-  const [prefilledPlayers, setPrefilledPlayers] = useState<Player[] | null>(null);
-  const [search, setSearch] = useState('');
-  const [notifications, setNotifications] = useState<AppNotification[]>([]);
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [showAdvanced, setShowAdvanced] = useState(false);
-  const [advancedFilters, setAdvancedFilters] = useState<AdvancedFilterState>(initialAdvancedFilters);
-
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [view, selectedUserId, selectedTableId, selectedProposalId]);
+
+  // Esegue l'azione in sospeso dopo il login
+  useEffect(() => {
+    if (currentUser && pendingAction) {
+      if (pendingAction.type === 'join') {
+        handleJoinTable(pendingAction.id);
+      } else if (pendingAction.type === 'interest') {
+        handleToggleInterest(pendingAction.id);
+      }
+      setPendingAction(null);
+    }
+  }, [currentUser, pendingAction]);
 
   const handleUpdateCollection = async (userId: string, newCollection: CollectedGame[]) => {
     setIsSyncing(true);
@@ -97,13 +109,37 @@ const App: React.FC = () => {
   };
 
   const handleJoinTable = async (tableId: string) => {
-    if (!currentUser) { setIsAuthModalOpen(true); return; }
+    if (!currentUser) { 
+      setPendingAction({ type: 'join', id: tableId });
+      setIsAuthModalOpen(true); 
+      return; 
+    }
     setIsSyncing(true);
     const table = tables.find(t => t.id === tableId);
     if (table && !table.currentPlayers.some(p => p.id === currentUser.id)) {
       const updatedTable = { ...table, currentPlayers: [...table.currentPlayers, currentUser] };
       await db.saveTable(updatedTable);
       setTables(prev => prev.map(t => t.id === tableId ? updatedTable : t));
+    }
+    setIsSyncing(false);
+  };
+
+  const handleToggleInterest = async (id: string) => {
+    if (!currentUser) { 
+      setPendingAction({ type: 'interest', id: id });
+      setIsAuthModalOpen(true); 
+      return; 
+    }
+    setIsSyncing(true);
+    const prop = proposals.find(p => p.id === id);
+    if (prop) {
+      const isAlreadyInterested = prop.interestedPlayerIds.includes(currentUser.id);
+      const updatedIds = isAlreadyInterested 
+        ? prop.interestedPlayerIds.filter(pid => pid !== currentUser.id) 
+        : [...prop.interestedPlayerIds, currentUser.id];
+      const updatedProp = { ...prop, interestedPlayerIds: updatedIds };
+      await db.saveProposal(updatedProp);
+      setProposals(prev => prev.map(p => p.id === id ? updatedProp : p));
     }
     setIsSyncing(false);
   };
@@ -163,23 +199,7 @@ const App: React.FC = () => {
     setIsSyncing(false);
   };
 
-  const handleToggleInterest = async (id: string) => {
-    if (!currentUser) { setIsAuthModalOpen(true); return; }
-    setIsSyncing(true);
-    const prop = proposals.find(p => p.id === id);
-    if (prop) {
-      const isAlreadyInterested = prop.interestedPlayerIds.includes(currentUser.id);
-      const updatedIds = isAlreadyInterested 
-        ? prop.interestedPlayerIds.filter(pid => pid !== currentUser.id) 
-        : [...prop.interestedPlayerIds, currentUser.id];
-      const updatedProp = { ...prop, interestedPlayerIds: updatedIds };
-      await db.saveProposal(updatedProp);
-      setProposals(prev => prev.map(p => p.id === id ? updatedProp : p));
-    }
-    setIsSyncing(false);
-  };
-
-  // Statistiche e Ranking
+  // Calcolo Statistiche e Filtri
   const rankingRange = useMemo(() => {
     const period = rankingPeriod;
     const now = new Date(SIMULATED_NOW);
@@ -317,14 +337,14 @@ const App: React.FC = () => {
               <button onClick={() => { if(!currentUser) setIsAuthModalOpen(true); else setView('create'); }} className="w-full md:w-auto px-8 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-black text-[10px] uppercase tracking-widest transition-all shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-2 active:scale-95 shrink-0">
                 <i className="fa-solid fa-plus-circle text-base"></i> Apri Tavolo
               </button>
+              <div className="relative flex-1 w-full">
+                <i className="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 text-sm"></i>
+                <input type="text" placeholder="Cerca un gioco o una sessione..." className="w-full bg-slate-900/50 border border-slate-700 rounded-xl pl-11 pr-4 py-3 text-base text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all" value={search} onChange={e => setSearch(e.target.value)} />
+              </div>
               <button onClick={() => setShowAdvanced(!showAdvanced)} className={`w-full md:w-auto px-4 py-3 rounded-xl flex items-center justify-center gap-3 border transition-all text-[10px] font-black uppercase tracking-widest ${showAdvanced ? 'bg-indigo-600 border-indigo-500 text-white shadow-lg' : 'bg-slate-900/50 border-slate-700 text-slate-400 hover:bg-slate-800'}`}>
                 <i className={`fa-solid ${showAdvanced ? 'fa-chevron-up' : 'fa-sliders'}`}></i>
                 <span className="md:hidden lg:inline">Filtri</span>
               </button>
-              <div className="relative flex-1 w-full">
-                <i className="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 text-sm"></i>
-                <input type="text" placeholder="Cerca un gioco o una sessione..." className="w-full bg-slate-900/50 border border-slate-700 rounded-xl pl-11 pr-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all" value={search} onChange={e => setSearch(e.target.value)} />
-              </div>
             </div>
 
             <AdvancedFilters mode="tables" filters={advancedFilters} onChange={setAdvancedFilters} onReset={() => setAdvancedFilters(initialAdvancedFilters)} isVisible={showAdvanced} />
@@ -345,7 +365,7 @@ const App: React.FC = () => {
                       <GameCard 
                         key={table.id} type="table" data={table} currentUser={currentUser} userRanks={userRanks} allUsers={allUsers} 
                         index={tables.length - tables.findIndex(t => t.id === table.id)}
-                        onPrimaryAction={currentUser && table.currentPlayers.some(p => p.id === currentUser.id) ? handleLeaveTable : handleJoinTable} 
+                        onPrimaryAction={handleJoinTable} 
                         onEdit={(t) => { setEditingTable(t); setView('edit'); }} 
                         onDelete={async (id) => { setIsSyncing(true); await db.deleteTable(id); setTables(prev => prev.filter(t => t.id !== id)); setIsSyncing(false); }}
                         onSelectMember={(id) => { setSelectedUserId(id); setView('profile'); }}
@@ -362,30 +382,51 @@ const App: React.FC = () => {
         {view === 'proposals' && (
           <div className="space-y-6 animate-in fade-in duration-500">
              <div className="flex flex-col md:flex-row items-center gap-4 w-full">
-                <button onClick={() => setView('create-proposal')} className="w-full md:w-auto px-8 py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all shadow-xl shadow-amber-500/30 flex items-center justify-center gap-2 active:scale-95 shrink-0">
+                <button onClick={() => { if(!currentUser) setIsAuthModalOpen(true); else setView('create-proposal'); }} className="w-full md:w-auto px-8 py-3 bg-amber-500 hover:bg-amber-400 text-slate-950 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all shadow-xl shadow-amber-500/30 flex items-center justify-center gap-2 active:scale-95 shrink-0">
                   <i className="fa-solid fa-lightbulb text-base"></i> Crea proposta
                 </button>
                 <div className="relative flex-1 w-full">
                   <i className="fa-solid fa-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 text-sm"></i>
-                  <input type="text" placeholder="Cerca una proposta..." className="w-full bg-slate-900/50 border border-slate-700 rounded-xl pl-11 pr-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all" value={search} onChange={e => setSearch(e.target.value)} />
+                  <input type="text" placeholder="Cerca una proposta..." className="w-full bg-slate-900/50 border border-slate-700 rounded-xl pl-11 pr-4 py-3 text-base text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition-all" value={search} onChange={e => setSearch(e.target.value)} />
                 </div>
+                <button onClick={() => setShowAdvanced(!showAdvanced)} className={`w-full md:w-auto px-4 py-3 rounded-xl flex items-center justify-center gap-3 border transition-all text-[10px] font-black uppercase tracking-widest ${showAdvanced ? 'bg-amber-500 border-amber-400 text-slate-950 shadow-lg' : 'bg-slate-900/50 border-slate-700 text-slate-400 hover:bg-slate-800'}`}>
+                  <i className={`fa-solid ${showAdvanced ? 'fa-chevron-up' : 'fa-sliders'}`}></i>
+                  <span className="md:hidden lg:inline">Filtri</span>
+                </button>
               </div>
-              <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-                {filteredProposals.map((proposal) => (
-                  <GameCard 
-                    key={proposal.id} type="proposal" data={proposal} currentUser={currentUser} userRanks={userRanks} allUsers={allUsers} 
-                    index={proposals.length - proposals.findIndex(p => p.id === proposal.id)}
-                    onPrimaryAction={handleToggleInterest} 
-                    onSecondaryAction={(id) => { 
-                      if (!currentUser) { setIsAuthModalOpen(true); return; }
-                      const p = proposals.find(pr => pr.id === id); 
-                      if(p) { setPrefilledPlayers(allUsers.filter(u => p.interestedPlayerIds.includes(u.id))); setEditingTable(p); setView('create'); }
-                    }}
-                    onEdit={(p) => { setEditingProposal(p); setView('edit-proposal'); }}
-                    onDelete={async (id) => { setIsSyncing(true); await db.deleteProposal(id); setProposals(prev => prev.filter(p => p.id !== id)); setIsSyncing(false); }}
-                    onSelectMember={(id) => { setSelectedUserId(id); setView('profile'); }}
-                    onViewDetail={(p) => { setSelectedProposalId(p.id); setView('proposal-detail'); }}
-                  />
+
+              <AdvancedFilters mode="proposals" filters={advancedFilters} onChange={setAdvancedFilters} onReset={() => setAdvancedFilters(initialAdvancedFilters)} isVisible={showAdvanced} />
+              <FeedControls mode="proposals" sort={sortOption} group={groupOption} onSortChange={setSortOption} onGroupChange={setGroupOption} />
+
+              <div className="space-y-10">
+                {(Object.entries(groupedProposals) as [string, GameProposal[]][]).map(([groupKey, groupItems], gIdx) => (
+                  <div key={groupKey} className="space-y-4 animate-in fade-in duration-500" style={{ animationDelay: `${gIdx * 50}ms` }}>
+                    {groupOption !== 'none' && (
+                      <div className="flex items-center gap-3 px-2">
+                        <div className={`w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]`}></div>
+                        <h3 className="text-xs font-black uppercase tracking-[0.2em] text-white/70">{groupKey}</h3>
+                        <div className="flex-1 h-px bg-gradient-to-r from-slate-800 to-transparent"></div>
+                      </div>
+                    )}
+                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                      {groupItems.map((proposal) => (
+                        <GameCard 
+                          key={proposal.id} type="proposal" data={proposal} currentUser={currentUser} userRanks={userRanks} allUsers={allUsers} 
+                          index={proposals.length - proposals.findIndex(p => p.id === proposal.id)}
+                          onPrimaryAction={handleToggleInterest} 
+                          onSecondaryAction={(id) => { 
+                            if (!currentUser) { setIsAuthModalOpen(true); return; }
+                            const p = proposals.find(pr => pr.id === id); 
+                            if(p) { setPrefilledPlayers(allUsers.filter(u => p.interestedPlayerIds.includes(u.id))); setEditingTable(p); setView('create'); }
+                          }}
+                          onEdit={(p) => { setEditingProposal(p); setView('edit-proposal'); }}
+                          onDelete={async (id) => { setIsSyncing(true); await db.deleteProposal(id); setProposals(prev => prev.filter(p => p.id !== id)); setIsSyncing(false); }}
+                          onSelectMember={(id) => { setSelectedUserId(id); setView('profile'); }}
+                          onViewDetail={(p) => { setSelectedProposalId(p.id); setView('proposal-detail'); }}
+                        />
+                      ))}
+                    </div>
+                  </div>
                 ))}
               </div>
           </div>
@@ -398,6 +439,21 @@ const App: React.FC = () => {
             onEdit={(t) => { setEditingTable(t); setView('edit'); }}
             onSelectMember={(id) => { setSelectedUserId(id); setView('profile'); }}
             onDelete={async (id) => { setIsSyncing(true); await db.deleteTable(id); setTables(prev => prev.filter(t => t.id !== id)); setIsSyncing(false); setView('home'); }}
+          />
+        )}
+
+        {view === 'proposal-detail' && selectedProposalId && (
+          <GameDetailView 
+            type="proposal" data={proposals.find(p => p.id === selectedProposalId)!} currentUser={currentUser} userRanks={userRanks} allUsers={allUsers}
+            onBack={() => setView('proposals')} onPrimaryAction={handleToggleInterest}
+            onSecondaryAction={(id) => { 
+              if (!currentUser) { setIsAuthModalOpen(true); return; }
+              const p = proposals.find(pr => pr.id === id); 
+              if(p) { setPrefilledPlayers(allUsers.filter(u => p.interestedPlayerIds.includes(u.id))); setEditingTable(p); setView('create'); }
+            }}
+            onEdit={(p) => { setEditingProposal(p); setView('edit-proposal'); }}
+            onSelectMember={(id) => { setSelectedUserId(id); setView('profile'); }}
+            onDelete={async (id) => { setIsSyncing(true); await db.deleteProposal(id); setProposals(prev => prev.filter(p => p.id !== id)); setIsSyncing(false); setView('proposals'); }}
           />
         )}
 
@@ -425,11 +481,22 @@ const App: React.FC = () => {
         {(view === 'create-proposal' || view === 'edit-proposal') && <ProposalForm onCancel={() => setView('proposals')} onSubmit={handleCreateProposal} initialData={editingProposal} />}
       </main>
 
-      <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} onLogin={(name, isAdmin, avatar) => {
-        const user = allUsers.find(u => u.name === name);
-        if (user) setCurrentUser(user);
-        setIsAuthModalOpen(false);
-      }} />
+      <AuthModal 
+        isOpen={isAuthModalOpen} 
+        onClose={() => {
+          setIsAuthModalOpen(false);
+          setPendingAction(null); // Pulisce l'azione in sospeso se l'utente annulla il login
+        }} 
+        onLogin={(name) => {
+          const user = allUsers.find(u => u.name === name);
+          if (user) {
+            setCurrentUser(user);
+          }
+          setIsAuthModalOpen(false);
+          // La view corrente NON viene resettata, l'utente rimane dove si trovava.
+          // L'azione pendente verrà eseguita tramite lo useEffect dedicato.
+        }} 
+      />
     </div>
   );
 };

@@ -1,86 +1,134 @@
 
 import { GameTable, GameProposal, Player, CollectedGame } from '../types';
-import { MOCK_TABLES, MOCK_USERS, MOCK_PROPOSALS } from '../constants';
+import { MOCK_TABLES, MOCK_PROPOSALS, MOCK_USERS } from '../constants';
 
-// Simulazione di un database Cloud asincrono
-class DatabaseService {
-  private storageKeyTables = 'bbs_db_tables';
-  private storageKeyProposals = 'bbs_db_proposals';
-  private storageKeyUsers = 'bbs_db_users';
+const API_BASE_URL = window.location.hostname === 'localhost' 
+  ? 'http://localhost:3001/api' 
+  : '/api';
 
-  // Simula la latenza di rete (300ms - 800ms)
-  private async simulateNetwork() {
-    return new Promise(resolve => setTimeout(resolve, Math.random() * 500 + 300));
+class ApiService {
+  private useFallback = false;
+
+  private getStorageKey(endpoint: string) {
+    return `bbs_backup_${endpoint.replace(/\//g, '_')}`;
+  }
+
+  private async request<T>(endpoint: string, options?: RequestInit): Promise<T> {
+    if (this.useFallback) {
+      return this.handleFallback<T>(endpoint, options);
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+        ...options,
+        headers: {
+          'Content-Type': 'application/json',
+          ...options?.headers,
+        },
+      });
+
+      if (!response.ok) throw new Error('Errore risposta server');
+      return response.json();
+    } catch (error) {
+      console.warn(`Backend non raggiungibile su ${endpoint}, passo al fallback locale.`);
+      this.useFallback = true;
+      return this.handleFallback<T>(endpoint, options);
+    }
+  }
+
+  private async handleFallback<T>(endpoint: string, options?: RequestInit): Promise<T> {
+    const method = options?.method || 'GET';
+    const cleanEndpoint = endpoint.split('?')[0].split('/')[1]; // es: 'tables'
+    const storageKey = this.getStorageKey(cleanEndpoint);
+    
+    // Inizializzazione dati se vuoti
+    let data = JSON.parse(localStorage.getItem(storageKey) || 'null');
+    if (!data) {
+      if (cleanEndpoint === 'tables') data = MOCK_TABLES;
+      else if (cleanEndpoint === 'proposals') data = MOCK_PROPOSALS;
+      else if (cleanEndpoint === 'users') data = MOCK_USERS;
+      else data = [];
+      localStorage.setItem(storageKey, JSON.stringify(data));
+    }
+
+    if (method === 'GET') {
+      // Gestione get singolo o lista
+      const id = endpoint.split('/')[2];
+      if (id) {
+        return data.find((item: any) => item.id === id) as T;
+      }
+      return data as T;
+    }
+
+    if (method === 'POST' || method === 'PUT') {
+      const body = JSON.parse(options?.body as string);
+      const id = endpoint.split('/')[2] || body.id;
+      
+      const index = data.findIndex((item: any) => item.id === id);
+      if (index !== -1) {
+        data[index] = { ...data[index], ...body };
+      } else {
+        data.push(body);
+      }
+      localStorage.setItem(storageKey, JSON.stringify(data));
+      return body as T;
+    }
+
+    if (method === 'DELETE') {
+      const id = endpoint.split('/')[2];
+      const newData = data.filter((item: any) => item.id !== id);
+      localStorage.setItem(storageKey, JSON.stringify(newData));
+      return { success: true } as any;
+    }
+
+    return [] as any;
   }
 
   // --- TABLES ---
   async getTables(): Promise<GameTable[]> {
-    await this.simulateNetwork();
-    const saved = localStorage.getItem(this.storageKeyTables);
-    return saved ? JSON.parse(saved) : MOCK_TABLES;
+    return this.request<GameTable[]>('/tables');
   }
 
   async saveTable(table: GameTable): Promise<void> {
-    await this.simulateNetwork();
-    const tables = await this.getTables();
-    const index = tables.findIndex(t => t.id === table.id);
-    if (index >= 0) {
-      tables[index] = table;
-    } else {
-      tables.unshift(table);
-    }
-    localStorage.setItem(this.storageKeyTables, JSON.stringify(tables));
+    // Se l'ID è corto è una creazione, se è lungo (timestamp) o esistente è un update
+    // In questo mock semplifichiamo: se esiste aggiorna, altrimenti crea.
+    return this.request(`/tables/${table.id}`, {
+      method: 'PUT',
+      body: JSON.stringify(table),
+    });
   }
 
   async deleteTable(id: string): Promise<void> {
-    await this.simulateNetwork();
-    const tables = await this.getTables();
-    const filtered = tables.filter(t => t.id !== id);
-    localStorage.setItem(this.storageKeyTables, JSON.stringify(filtered));
+    return this.request(`/tables/${id}`, { method: 'DELETE' });
   }
 
   // --- PROPOSALS ---
   async getProposals(): Promise<GameProposal[]> {
-    await this.simulateNetwork();
-    const saved = localStorage.getItem(this.storageKeyProposals);
-    return saved ? JSON.parse(saved) : MOCK_PROPOSALS;
+    return this.request<GameProposal[]>('/proposals');
   }
 
   async saveProposal(proposal: GameProposal): Promise<void> {
-    await this.simulateNetwork();
-    const proposals = await this.getProposals();
-    const index = proposals.findIndex(p => p.id === proposal.id);
-    if (index >= 0) {
-      proposals[index] = proposal;
-    } else {
-      proposals.unshift(proposal);
-    }
-    localStorage.setItem(this.storageKeyProposals, JSON.stringify(proposals));
+    return this.request(`/proposals/${proposal.id}`, {
+      method: 'PUT',
+      body: JSON.stringify(proposal),
+    });
   }
 
   async deleteProposal(id: string): Promise<void> {
-    await this.simulateNetwork();
-    const proposals = await this.getProposals();
-    const filtered = proposals.filter(p => p.id !== id);
-    localStorage.setItem(this.storageKeyProposals, JSON.stringify(filtered));
+    return this.request(`/proposals/${id}`, { method: 'DELETE' });
   }
 
   // --- USERS ---
   async getUsers(): Promise<Player[]> {
-    await this.simulateNetwork();
-    const saved = localStorage.getItem(this.storageKeyUsers);
-    return saved ? JSON.parse(saved) : MOCK_USERS;
+    return this.request<Player[]>('/users');
   }
 
   async updateUser(user: Player): Promise<void> {
-    await this.simulateNetwork();
-    const users = await this.getUsers();
-    const index = users.findIndex(u => u.id === user.id);
-    if (index >= 0) {
-      users[index] = user;
-      localStorage.setItem(this.storageKeyUsers, JSON.stringify(users));
-    }
+    return this.request(`/users/${user.id}`, {
+      method: 'PUT',
+      body: JSON.stringify(user),
+    });
   }
 }
 
-export const db = new DatabaseService();
+export const db = new ApiService();

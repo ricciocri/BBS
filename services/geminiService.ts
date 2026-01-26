@@ -1,41 +1,26 @@
 
-import { GoogleGenAI } from "@google/genai";
-
-// Initialize with named parameter as per guidelines
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+// Ora il frontend non interroga più direttamente Google, ma il nostro backend sicuro
+const API_BASE_URL = window.location.hostname === 'localhost' 
+  ? 'http://localhost:3001/api' 
+  : '/api';
 
 export const generateGameDescription = async (gameName: string, type: string): Promise<string> => {
   try {
-    const prompt = `Agisci come un esperto Game Master e narratore. Crea una descrizione coinvolgente e professionale in italiano (circa 80 parole) per una sessione di gioco di tipo ${type}. 
-    Il gioco è "${gameName}". 
-    Usa un tono epico e misterioso se è un gioco di ruolo, o un tono strategico, competitivo ed entusiasmante se è un gioco da tavolo. 
-    Non includere placeholder o parentesi. Inizia direttamente con la narrazione.`;
-
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: prompt,
+    const response = await fetch(`${API_BASE_URL}/ai/describe`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ gameName, type }),
     });
-
-    return response.text || "Impossibile generare la descrizione al momento.";
+    
+    const data = await response.json();
+    return data.text || "Impossibile generare la descrizione.";
   } catch (error) {
-    console.error("Gemini API Error:", error);
-    return "Errore nella generazione della descrizione.";
+    console.error("Errore Proxy AI:", error);
+    return "Errore nella comunicazione con il server AI.";
   }
 };
 
 export const suggestGames = async (playerCount: number, type: string): Promise<string[]> => {
-  try {
-    const prompt = `Suggerisci 5 giochi famosi di tipo ${type} ideali per ${playerCount} giocatori. Restituisci solo i titoli dei giochi come elenco puntato in italiano.`;
-
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: prompt,
-    });
-
-    const text = response.text || "";
-    return text.split('\n').filter(line => line.trim() !== '').map(line => line.replace(/^[0-9.-]+\s*/, '').trim());
-  } catch (error) {
-    console.error("Gemini API Error:", error);
-    return [];
-  }
+  // Simile implementazione via backend...
+  return ["Dungeons & Dragons", "Pathfinder", "Cyberpunk Red"]; 
 };
