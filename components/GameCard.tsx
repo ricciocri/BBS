@@ -98,30 +98,12 @@ const GameCard: React.FC<GameCardProps> = ({
   return (
     <div 
       onClick={() => onViewDetail(data)}
-      className={`group relative rounded-2xl overflow-hidden border border-slate-800 flex flex-col transition-all duration-500 shadow-sm hover:border-${themeColor}-500/50 hover:shadow-2xl hover:shadow-${themeColor}-500/10 cursor-pointer h-full min-h-[220px]`}
+      className={`group relative rounded-2xl overflow-hidden border border-slate-800 flex flex-col transition-all duration-500 shadow-sm hover:border-${themeColor}-500/50 hover:shadow-2xl hover:shadow-${themeColor}-500/10 cursor-pointer h-full min-h-[220px] bg-slate-900/90 backdrop-blur-md`}
     >
-      {/* Background Image with Gradient Overlay */}
-      <div className="absolute inset-0 z-0">
-        {data.imageUrl ? (
-          <img 
-            src={data.imageUrl} 
-            alt="" 
-            className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
-          />
-        ) : (
-          <div className="w-full h-full bg-slate-950 flex items-center justify-center">
-            {isRPG ? (
-              <i className="fa-solid fa-dice-d20 text-8xl opacity-10 text-slate-400"></i>
-            ) : (
-              <img 
-                src="https://cf.geekdo-images.com/Cr0z-yDOu7GqlIhMhSvHnQ__imagepage@2x/img/VjsGk_8gY4nAhbfYxMtvtm368Zc=/fit-in/1800x1200/filters:strip_icc()/pic7631734.jpg" 
-                className="w-full h-full object-cover opacity-20 grayscale brightness-50 contrast-125"
-                alt="Board Game Society"
-              />
-            )}
-          </div>
-        )}
-        <div className={`absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/80 to-slate-900/40 group-hover:via-slate-950/70 transition-all`}></div>
+      {/* Accent Background Pattern (Subtle) */}
+      <div className="absolute inset-0 z-0 opacity-10 pointer-events-none">
+        <div className={`absolute top-0 right-0 w-32 h-32 bg-${themeColor}-500 blur-3xl -mr-16 -mt-16`}></div>
+        <div className={`absolute bottom-0 left-0 w-32 h-32 bg-${themeColor}-500 blur-3xl -ml-16 -mb-16`}></div>
       </div>
 
       {/* Content */}
@@ -156,20 +138,20 @@ const GameCard: React.FC<GameCardProps> = ({
         </div>
 
         {/* Middle Area: Title & System */}
-        <div className="mt-auto">
+        <div className="mt-2">
           <p className={`text-[8px] font-black uppercase tracking-[0.2em] mb-1 ${isRPG ? 'text-indigo-400' : 'text-emerald-400'}`}>
             {isRPG ? 'GDR System' : 'Board Game'}
           </p>
-          <h3 className="text-xl md:text-2xl font-bold text-white leading-tight uppercase tracking-tight group-hover:text-white transition-colors">
+          <h3 className="text-xl md:text-2xl font-bold text-white leading-tight uppercase tracking-tight group-hover:text-indigo-400 transition-colors">
             {data.gameName}
           </h3>
-          <p className="text-slate-400 text-[10px] line-clamp-2 mt-2 font-medium leading-relaxed max-w-sm">
+          <p className="text-slate-400 text-[10px] line-clamp-3 mt-2 font-medium leading-relaxed max-w-sm">
             {data.description}
           </p>
         </div>
 
         {/* Footer Row: Meta & Players */}
-        <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-white/10">
+        <div className="mt-auto flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-white/10">
           <div className="flex items-center gap-4">
              <div className="flex flex-col">
                 <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-0.5">Data</span>
@@ -201,6 +183,9 @@ const GameCard: React.FC<GameCardProps> = ({
           </div>
         </div>
       </div>
+      
+      {/* Bottom Accent Border */}
+      <div className={`absolute bottom-0 left-0 w-full h-1 bg-${themeColor}-500/30 group-hover:bg-${themeColor}-500 transition-colors`}></div>
     </div>
   );
 };
