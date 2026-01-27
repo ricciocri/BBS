@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { GameTable, GameProposal, GameType, GameFormat, Player } from '../types';
 
 interface GameDetailViewProps {
@@ -13,7 +13,7 @@ interface GameDetailViewProps {
   onSecondaryAction?: (id: string) => void;
   onEdit: (data: any) => void;
   onSelectMember: (userId: string) => void;
-  onDelete?: (id: string) => void;
+  onDelete?: (id: string) => Promise<void> | void;
 }
 
 const GameDetailView: React.FC<GameDetailViewProps> = ({ 
@@ -29,6 +29,7 @@ const GameDetailView: React.FC<GameDetailViewProps> = ({
   onSelectMember,
   onDelete
 }) => {
+  const [isDeleting, setIsDeleting] = useState(false);
   const isTable = type === 'table';
   const table = isTable ? (data as GameTable) : null;
   const proposal = !isTable ? (data as GameProposal) : null;
@@ -79,10 +80,18 @@ const GameDetailView: React.FC<GameDetailViewProps> = ({
     return `https://boardgamegeek.com/results?searchname=${encodeURIComponent(data.gameName)}`;
   };
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (window.confirm('Sei sicuro di voler eliminare definitivamente questo elemento?') && onDelete) {
-      onDelete(data.id);
-      onBack();
+      setIsDeleting(true);
+      try {
+        await onDelete(data.id);
+        // La navigazione indietro è gestita internamente dalla funzione onDelete in App.tsx se necessario
+        // o chiamiamo onBack qui se onDelete non lo fa. 
+        // In App.tsx handleTableDelete chiama setView('home')
+      } catch (e) {
+        console.error("Errore durante l'eliminazione:", e);
+        setIsDeleting(false);
+      }
     }
   };
 
@@ -119,11 +128,12 @@ const GameDetailView: React.FC<GameDetailViewProps> = ({
                   <span className="hidden sm:inline">Modifica</span>
                 </button>
                 <button 
+                  disabled={isDeleting}
                   onClick={handleDelete}
-                  className="px-4 py-2.5 rounded-2xl bg-red-900/80 backdrop-blur-xl border border-red-500/20 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-white hover:bg-red-700 transition-all shadow-2xl"
+                  className={`px-4 py-2.5 rounded-2xl bg-red-900/80 backdrop-blur-xl border border-red-500/20 flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-white hover:bg-red-700 transition-all shadow-2xl ${isDeleting ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
-                  <i className="fa-solid fa-trash"></i>
-                  <span className="hidden sm:inline">Elimina</span>
+                  <i className={`fa-solid ${isDeleting ? 'fa-spinner animate-spin' : 'fa-trash'}`}></i>
+                  <span className="hidden sm:inline">{isDeleting ? 'Eliminazione...' : 'Elimina'}</span>
                 </button>
               </>
             )}

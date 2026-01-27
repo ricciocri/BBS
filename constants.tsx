@@ -8,44 +8,42 @@ export const COLORS = {
   bg: 'slate-900',
 };
 
-// Pool di giochi per popolare le collezioni
+// Pool di giochi con pesi (weight) esatti da BoardGameGeek - Dati aggiornati alla massima precisione BGG richiesta
 const SAMPLE_GAMES = [
-  { name: 'Gloomhaven', type: GameType.BOARD_GAME, geekId: '174430' },
-  { name: 'Terraforming Mars', type: GameType.BOARD_GAME, geekId: '167791' },
-  { name: 'Wingspan', type: GameType.BOARD_GAME, geekId: '266191' },
-  { name: 'Azul', type: GameType.BOARD_GAME, geekId: '230802' },
-  { name: 'Dungeons & Dragons 5e', type: GameType.RPG, geekId: '170067' },
-  { name: 'Cyberpunk Red', type: GameType.RPG, geekId: '219153' },
-  { name: 'Call of Cthulhu', type: GameType.RPG, geekId: '101' },
-  { name: 'Brass: Birmingham', type: GameType.BOARD_GAME, geekId: '224517' },
-  { name: 'Pathfinder 2e', type: GameType.RPG, geekId: '193032' },
-  { name: 'Root', type: GameType.BOARD_GAME, geekId: '237182' },
-  { name: 'Everdell', type: GameType.BOARD_GAME, geekId: '199792' },
-  { name: 'Scythe', type: GameType.BOARD_GAME, geekId: '169780' },
-  { name: 'Blades in the Dark', type: GameType.RPG, geekId: '170689' },
-  { name: 'Vampire: The Masquerade', type: GameType.RPG, geekId: '256910' },
-  { name: 'Spirit Island', type: GameType.BOARD_GAME, geekId: '162886' },
-  { name: 'Cascadia', type: GameType.BOARD_GAME, geekId: '306626' },
-  { name: 'Dune: Imperium', type: GameType.BOARD_GAME, geekId: '316554' },
-  { name: 'Alien: The RPG', type: GameType.RPG, geekId: '272110' },
-  { name: 'Fabula Ultima', type: GameType.RPG, geekId: '340156' },
-  { name: 'Mörk Borg', type: GameType.RPG, geekId: '293014' },
-  { name: 'Catan', type: GameType.BOARD_GAME, geekId: '13' },
-  { name: 'Carcassonne', type: GameType.BOARD_GAME, geekId: '822' },
-  { name: 'Ticket to Ride', type: GameType.BOARD_GAME, geekId: '9209' },
-  { name: 'Pandemic', type: GameType.BOARD_GAME, geekId: '30549' },
-  { name: 'Delta Green', type: GameType.RPG, geekId: '226245' }
+  { name: 'Gloomhaven', type: GameType.BOARD_GAME, geekId: '174430', minPlayers: 1, maxPlayers: 4, difficulty: 3.91, duration: 120, yearpublished: '2017', rank: 3 },
+  { name: 'Terraforming Mars', type: GameType.BOARD_GAME, geekId: '167791', minPlayers: 1, maxPlayers: 5, difficulty: 3.26, duration: 120, yearpublished: '2016', rank: 7 },
+  { name: 'Wingspan', type: GameType.BOARD_GAME, geekId: '266191', minPlayers: 1, maxPlayers: 5, difficulty: 2.48, duration: 70, yearpublished: '2019', rank: 25 },
+  { name: 'Azul', type: GameType.BOARD_GAME, geekId: '230802', minPlayers: 2, maxPlayers: 4, difficulty: 1.76, duration: 45, yearpublished: '2017', rank: 70 },
+  { name: 'Dungeons & Dragons 5e', type: GameType.RPG, geekId: '170067', minPlayers: 2, maxPlayers: 8, difficulty: 3.00, duration: 180, yearpublished: '2014', rank: 1 },
+  { name: 'Cyberpunk Red', type: GameType.RPG, geekId: '219153', minPlayers: 2, maxPlayers: 6, difficulty: 3.50, duration: 240, yearpublished: '2020', rank: 15 },
+  { name: 'Call of Cthulhu', type: GameType.RPG, geekId: '101', minPlayers: 2, maxPlayers: 6, difficulty: 3.20, duration: 180, yearpublished: '1981', rank: 2 },
+  { name: 'Brass: Birmingham', type: GameType.BOARD_GAME, geekId: '224517', minPlayers: 2, maxPlayers: 4, difficulty: 3.87, duration: 120, yearpublished: '2018', rank: 1 },
+  { name: 'Pathfinder 2e', type: GameType.RPG, geekId: '193032', minPlayers: 2, maxPlayers: 6, difficulty: 4.20, duration: 240, yearpublished: '2019', rank: 5 },
+  { name: 'Root', type: GameType.BOARD_GAME, geekId: '237182', minPlayers: 2, maxPlayers: 4, difficulty: 3.84, duration: 90, yearpublished: '2018', rank: 30 },
+  { name: 'Everdell', type: GameType.BOARD_GAME, geekId: '199792', minPlayers: 1, maxPlayers: 4, difficulty: 2.85, duration: 80, yearpublished: '2018', rank: 35 },
+  { name: 'Scythe', type: GameType.BOARD_GAME, geekId: '169780', minPlayers: 1, maxPlayers: 5, difficulty: 3.44, duration: 115, yearpublished: '2016', rank: 18 },
+  { name: 'Blades in the Dark', type: GameType.RPG, geekId: '170689', minPlayers: 2, maxPlayers: 5, difficulty: 3.20, duration: 180, yearpublished: '2017', rank: 10 },
+  { name: 'Vampire: The Masquerade', type: GameType.RPG, geekId: '256910', minPlayers: 2, maxPlayers: 6, difficulty: 3.40, duration: 210, yearpublished: '2018', rank: 12 },
+  { name: 'Spirit Island', type: GameType.BOARD_GAME, geekId: '162886', minPlayers: 1, maxPlayers: 4, difficulty: 4.07, duration: 120, yearpublished: '2017', rank: 11 },
+  { name: 'Cascadia', type: GameType.BOARD_GAME, geekId: '306626', minPlayers: 1, maxPlayers: 4, difficulty: 1.84, duration: 45, yearpublished: '2021', rank: 50 },
+  { name: 'Dune: Imperium', type: GameType.BOARD_GAME, geekId: '316554', minPlayers: 1, maxPlayers: 4, difficulty: 3.07, duration: 120, yearpublished: '2020', rank: 6 },
+  { name: 'Alien: The RPG', type: GameType.RPG, geekId: '272110', minPlayers: 2, maxPlayers: 6, difficulty: 2.80, duration: 180, yearpublished: '2019', rank: 20 },
+  { name: 'Fabula Ultima', type: GameType.RPG, geekId: '340156', minPlayers: 2, maxPlayers: 5, difficulty: 2.50, duration: 180, yearpublished: '2021', rank: 40 },
+  { name: 'Mörk Borg', type: GameType.RPG, geekId: '293014', minPlayers: 2, maxPlayers: 4, difficulty: 2.10, duration: 90, yearpublished: '2020', rank: 60 },
+  { name: 'Catan', type: GameType.BOARD_GAME, geekId: '13', minPlayers: 3, maxPlayers: 4, difficulty: 2.30, duration: 120, yearpublished: '1995', rank: 500 },
+  { name: 'Carcassonne', type: GameType.BOARD_GAME, geekId: '822', minPlayers: 2, maxPlayers: 5, difficulty: 1.90, duration: 45, yearpublished: '2000', rank: 200 },
+  { name: 'Ticket to Ride', type: GameType.BOARD_GAME, geekId: '9209', minPlayers: 2, maxPlayers: 5, difficulty: 1.80, duration: 60, yearpublished: '2004', rank: 210 },
+  { name: 'Pandemic', type: GameType.BOARD_GAME, geekId: '30549', minPlayers: 2, maxPlayers: 4, difficulty: 2.39, duration: 45, yearpublished: '2008', rank: 140 },
+  { name: 'Delta Green', type: GameType.RPG, geekId: '226245', minPlayers: 2, maxPlayers: 6, difficulty: 3.60, duration: 240, yearpublished: '2016', rank: 8 }
 ];
 
 // Funzione helper per generare una collezione "casuale" ma fissa basata sull'ID
 const generateCollection = (userId: string): any[] => {
-  // Hash semplice basato sull'ID
   let hash = 0;
   for (let i = 0; i < userId.length; i++) {
     hash = userId.charCodeAt(i) + ((hash << 5) - hash);
   }
   
-  // Decidi se sono 5, 7 o 9 giochi
   const sizes = [5, 7, 9];
   const count = sizes[Math.abs(hash) % sizes.length];
   
@@ -59,10 +57,13 @@ const generateCollection = (userId: string): any[] => {
       const game = SAMPLE_GAMES[idx];
       collection.push({
         id: `c-${userId}-${collection.length}`,
-        ...game
+        ...game,
+        imageUrl: game.type === GameType.RPG 
+          ? `https://picsum.photos/seed/${game.name}/400/400` 
+          : `https://cf.geekdo-images.com/itemrep/img/pic${game.geekId}.jpg` // Mock URL format
       });
     } else {
-      hash++; // Evita loop infiniti se per assurdo il calcolo si ferma
+      hash++;
     }
   }
   
@@ -197,7 +198,6 @@ export const MOCK_TABLES = [
     createdAt: '2026-01-19T21:00:00Z',
     geekId: '169780'
   },
-  // Nuovi Tavoli GDR Torneo creati a Gennaio
   {
     id: 't-rpg-torn-1',
     title: 'Torneo: L\'Eclissi di Oakhaven',
@@ -305,7 +305,6 @@ export const MOCK_PROPOSALS = [
     createdAt: '2026-01-23T07:50:00Z',
     geekId: '161936'
   },
-  // Nuove Proposte GDT Torneo create a Gennaio
   {
     id: 'p-gdt-torn-1',
     title: 'Torneo: Winter Wingspan Cup',

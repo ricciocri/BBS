@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import Header from './components/Header';
 import GameCard from './components/GameCard';
@@ -14,6 +15,7 @@ import NotificationsView from './components/NotificationsView';
 import GameDetailView from './components/GameDetailView';
 import { GameTable, GameProposal, View, GameType, GameFormat, Player, AppNotification, AdvancedFilterState, RankingPeriod, SortType, GroupType, CollectedGame } from './types';
 import { db } from './services/api';
+import { MOCK_USERS } from './constants';
 
 const SIMULATED_NOW = new Date('2026-01-23T08:06:00');
 const TODAY_STR = SIMULATED_NOW.toISOString().split('T')[0];
@@ -37,7 +39,9 @@ const App: React.FC = () => {
   const [allUsers, setAllUsers] = useState<Player[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
-  const [currentUser, setCurrentUser] = useState<Player | null>(null);
+  
+  // Impostiamo Mauro come utente loggato di default (ID: admin-mauro)
+  const [currentUser, setCurrentUser] = useState<Player | null>(MOCK_USERS.find(u => u.id === 'admin-mauro') || null);
 
   // Stati per la gestione della navigazione e delle azioni post-login
   const [view, setView] = useState<View>('home');
@@ -116,10 +120,32 @@ const App: React.FC = () => {
     }
     setIsSyncing(true);
     const table = tables.find(t => t.id === tableId);
-    if (table && !table.currentPlayers.some(p => p.id === currentUser.id)) {
-      const updatedTable = { ...table, currentPlayers: [...table.currentPlayers, currentUser] };
-      await db.saveTable(updatedTable);
-      setTables(prev => prev.map(t => t.id === tableId ? updatedTable : t));
+    if (table) {
+      const isAlreadyJoined = table.currentPlayers.some(p => p.id === currentUser.id);
+      
+      if (isAlreadyJoined) {
+        if (table.hostId === currentUser.id) {
+          alert("L'organizzatore non può abbandonare il tavolo.");
+        } else {
+          const updatedTable = { 
+            ...table, 
+            currentPlayers: table.currentPlayers.filter(p => p.id !== currentUser.id) 
+          };
+          await db.saveTable(updatedTable);
+          setTables(prev => prev.map(t => t.id === tableId ? updatedTable : t));
+        }
+      } else {
+        if (table.currentPlayers.length < table.maxPlayers) {
+          const updatedTable = { 
+            ...table, 
+            currentPlayers: [...table.currentPlayers, currentUser] 
+          };
+          await db.saveTable(updatedTable);
+          setTables(prev => prev.map(t => t.id === tableId ? updatedTable : t));
+        } else {
+          alert("Il tavolo è pieno!");
+        }
+      }
     }
     setIsSyncing(false);
   };
@@ -145,39 +171,70 @@ const App: React.FC = () => {
   };
 
   const handleLeaveTable = async (tableId: string) => {
-    if (!currentUser) return;
+    return handleJoinTable(tableId);
+  };
+
+  const handleDeleteTable = async (id: string) => {
     setIsSyncing(true);
-    const table = tables.find(t => t.id === tableId);
-    if (table) {
-      if (table.hostId === currentUser.id) {
-        alert("L'organizzatore non può abbandonare il tavolo.");
-      } else {
-        const updatedTable = { ...table, currentPlayers: table.currentPlayers.filter(p => p.id !== currentUser.id) };
-        await db.saveTable(updatedTable);
-        setTables(prev => prev.map(t => t.id === tableId ? updatedTable : t));
-      }
+    try {
+      await db.deleteTable(id);
+      setTables(prev => prev.filter(t => t.id !== id));
+      if (view === 'table-detail') setView('home');
+    } catch (error) {
+      console.error("Errore eliminazione tavolo:", error);
+      alert("Errore durante l'eliminazione del tavolo.");
+    } finally {
+      setIsSyncing(false);
     }
-    setIsSyncing(false);
+  };
+
+  const handleDeleteProposal = async (id: string) => {
+    setIsSyncing(true);
+    try {
+      await db.deleteProposal(id);
+      setProposals(prev => prev.filter(p => p.id !== id));
+      if (view === 'proposal-detail') setView('proposals');
+    } catch (error) {
+      console.error("Errore eliminazione proposta:", error);
+      alert("Errore durante l'eliminazione della proposta.");
+    } finally {
+      setIsSyncing(false);
+    }
   };
 
   const handleCreateTable = async (formData: Omit<GameTable, 'id' | 'currentPlayers' | 'createdAt' | 'hostId'>) => {
     if (!currentUser) return;
     setIsSyncing(true);
-    const initialPlayers = prefilledPlayers 
-      ? [currentUser, ...prefilledPlayers.filter(p => p.id !== currentUser.id)] 
-      : [currentUser];
 
-    const newTable: GameTable = {
-      ...formData,
-      id: Date.now().toString(),
-      createdAt: SIMULATED_NOW.toISOString(),
-      hostId: currentUser.id,
-      host: currentUser.name,
-      currentPlayers: initialPlayers,
-      isConverted: !!prefilledPlayers 
-    };
-    await db.saveTable(newTable);
-    setTables(prev => [newTable, ...prev]);
+    // Se stiamo modificando un tavolo ESISTENTE (non una conversione da proposta)
+    if (editingTable && editingTable.id && !prefilledPlayers) {
+      const updatedTable: GameTable = {
+        ...editingTable as GameTable,
+        ...formData,
+      };
+      await db.saveTable(updatedTable);
+      setTables(prev => prev.map(t => t.id === updatedTable.id ? updatedTable : t));
+      setEditingTable(null);
+    } else {
+      // MODALITÀ CREAZIONE (o conversione da proposta)
+      const initialPlayers = prefilledPlayers 
+        ? [currentUser, ...prefilledPlayers.filter(p => p.id !== currentUser.id)] 
+        : [currentUser];
+
+      const newTable: GameTable = {
+        ...formData,
+        id: Date.now().toString(),
+        createdAt: SIMULATED_NOW.toISOString(),
+        hostId: currentUser.id,
+        host: currentUser.name,
+        currentPlayers: initialPlayers,
+        isConverted: !!prefilledPlayers 
+      };
+      await db.saveTable(newTable);
+      setTables(prev => [newTable, ...prev]);
+      setEditingTable(null);
+    }
+
     setView('home');
     setPrefilledPlayers(null);
     setIsSyncing(false);
@@ -186,20 +243,31 @@ const App: React.FC = () => {
   const handleCreateProposal = async (formData: Omit<GameProposal, 'id' | 'interestedPlayerIds' | 'createdAt' | 'proposer'>) => {
     if (!currentUser) return;
     setIsSyncing(true);
-    const newProp: GameProposal = {
-      ...formData,
-      id: Date.now().toString(),
-      proposer: currentUser,
-      interestedPlayerIds: [currentUser.id],
-      createdAt: SIMULATED_NOW.toISOString()
-    };
-    await db.saveProposal(newProp);
-    setProposals(prev => [newProp, ...prev]);
+
+    if (editingProposal && editingProposal.id) {
+      const updatedProp: GameProposal = {
+        ...editingProposal as GameProposal,
+        ...formData,
+      };
+      await db.saveProposal(updatedProp);
+      setProposals(prev => prev.map(p => p.id === updatedProp.id ? updatedProp : p));
+      setEditingProposal(null);
+    } else {
+      const newProp: GameProposal = {
+        ...formData,
+        id: Date.now().toString(),
+        proposer: currentUser,
+        interestedPlayerIds: [currentUser.id],
+        createdAt: SIMULATED_NOW.toISOString()
+      };
+      await db.saveProposal(newProp);
+      setProposals(prev => [newProp, ...prev]);
+    }
+
     setView('proposals');
     setIsSyncing(false);
   };
 
-  // Calcolo Statistiche e Filtri
   const rankingRange = useMemo(() => {
     const period = rankingPeriod;
     const now = new Date(SIMULATED_NOW);
@@ -313,7 +381,7 @@ const App: React.FC = () => {
         user={currentUser} currentView={view} rankingPeriod={rankingPeriod}
         userRank={currentUser ? userStats[currentUser.id]?.rank : undefined}
         userScore={currentUser ? userStats[currentUser.id]?.score : undefined}
-        onHomeClick={() => setView('home')} onProposalsClick={() => setView('proposals')}
+        onHomeClick={() => { setView('home'); setEditingTable(null); }} onProposalsClick={() => { setView('proposals'); setEditingProposal(null); }}
         onStatsClick={() => setView('stats')} onMembersClick={() => setView('members')}
         onAdminClick={() => setView('admin-dashboard')} onNotificationsClick={() => setView('notifications')}
         onAuthClick={() => setIsAuthModalOpen(true)} onLogout={() => setCurrentUser(null)}
@@ -367,7 +435,7 @@ const App: React.FC = () => {
                         index={tables.length - tables.findIndex(t => t.id === table.id)}
                         onPrimaryAction={handleJoinTable} 
                         onEdit={(t) => { setEditingTable(t); setView('edit'); }} 
-                        onDelete={async (id) => { setIsSyncing(true); await db.deleteTable(id); setTables(prev => prev.filter(t => t.id !== id)); setIsSyncing(false); }}
+                        onDelete={handleDeleteTable}
                         onSelectMember={(id) => { setSelectedUserId(id); setView('profile'); }}
                         onViewDetail={(t) => { setSelectedTableId(t.id); setView('table-detail'); }}
                       />
@@ -420,7 +488,7 @@ const App: React.FC = () => {
                             if(p) { setPrefilledPlayers(allUsers.filter(u => p.interestedPlayerIds.includes(u.id))); setEditingTable(p); setView('create'); }
                           }}
                           onEdit={(p) => { setEditingProposal(p); setView('edit-proposal'); }}
-                          onDelete={async (id) => { setIsSyncing(true); await db.deleteProposal(id); setProposals(prev => prev.filter(p => p.id !== id)); setIsSyncing(false); }}
+                          onDelete={handleDeleteProposal}
                           onSelectMember={(id) => { setSelectedUserId(id); setView('profile'); }}
                           onViewDetail={(p) => { setSelectedProposalId(p.id); setView('proposal-detail'); }}
                         />
@@ -438,7 +506,7 @@ const App: React.FC = () => {
             onBack={() => setView('home')} onPrimaryAction={handleJoinTable}
             onEdit={(t) => { setEditingTable(t); setView('edit'); }}
             onSelectMember={(id) => { setSelectedUserId(id); setView('profile'); }}
-            onDelete={async (id) => { setIsSyncing(true); await db.deleteTable(id); setTables(prev => prev.filter(t => t.id !== id)); setIsSyncing(false); setView('home'); }}
+            onDelete={handleDeleteTable}
           />
         )}
 
@@ -453,7 +521,7 @@ const App: React.FC = () => {
             }}
             onEdit={(p) => { setEditingProposal(p); setView('edit-proposal'); }}
             onSelectMember={(id) => { setSelectedUserId(id); setView('profile'); }}
-            onDelete={async (id) => { setIsSyncing(true); await db.deleteProposal(id); setProposals(prev => prev.filter(p => p.id !== id)); setIsSyncing(false); setView('proposals'); }}
+            onDelete={handleDeleteProposal}
           />
         )}
 
@@ -477,8 +545,8 @@ const App: React.FC = () => {
 
         {view === 'stats' && <StatsModule tables={tables} user={currentUser} onBack={() => setView('home')} />}
         {view === 'members' && <MemberList allUsers={allUsers} userRanks={userRanks} userStats={userStats} currentUser={currentUser} rankingPeriod={rankingPeriod} onRankingPeriodChange={setRankingPeriod} onSelectMember={(id) => { setSelectedUserId(id); setView('profile'); }} tables={tables} proposals={proposals} />}
-        {(view === 'create' || view === 'edit') && <TableForm onCancel={() => setView('home')} onSubmit={handleCreateTable} initialData={editingTable} isConversion={!!prefilledPlayers} />}
-        {(view === 'create-proposal' || view === 'edit-proposal') && <ProposalForm onCancel={() => setView('proposals')} onSubmit={handleCreateProposal} initialData={editingProposal} />}
+        {(view === 'create' || view === 'edit') && <TableForm onCancel={() => { setView('home'); setEditingTable(null); }} onSubmit={handleCreateTable} initialData={editingTable} isConversion={!!prefilledPlayers} />}
+        {(view === 'create-proposal' || view === 'edit-proposal') && <ProposalForm onCancel={() => { setView('proposals'); setEditingProposal(null); }} onSubmit={handleCreateProposal} initialData={editingProposal} />}
       </main>
 
       <AuthModal 

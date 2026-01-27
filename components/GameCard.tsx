@@ -1,3 +1,4 @@
+
 import React, { useMemo } from 'react';
 import { GameTable, GameProposal, GameType, GameFormat, Player } from '../types';
 
@@ -35,16 +36,13 @@ const GameCard: React.FC<GameCardProps> = ({
   const proposal = !isTable ? (data as GameProposal) : null;
 
   const isRPG = data.type === GameType.RPG;
+  const now = new Date();
+  const systemTimeMs = now.getTime();
   
-  const SYSTEM_NOW = new Date('2026-01-23T08:06:00').getTime();
-  const today = '2026-01-23';
-  
-  const isInactive = isTable && table!.date < today;
-
   const isNew = useMemo(() => {
     const created = new Date(data.createdAt).getTime();
-    return (SYSTEM_NOW - created) < 24 * 60 * 60 * 1000;
-  }, [data.createdAt, SYSTEM_NOW]);
+    return (systemTimeMs - created) < 24 * 60 * 60 * 1000;
+  }, [data.createdAt, systemTimeMs]);
 
   const isJoined = isTable && currentUser ? table!.currentPlayers.some(p => p.id === currentUser.id) : false;
   const isHost = isTable && currentUser && table ? table.hostId === currentUser.id : false;
@@ -60,47 +58,37 @@ const GameCard: React.FC<GameCardProps> = ({
     const format = isTable ? table!.format : proposal!.format;
     switch (format) {
       case GameFormat.CAMPAIGN: 
-        return { label: 'Campagna', classes: 'bg-amber-900/40 text-amber-400 border-amber-500/20' };
+        return { label: 'Campagna', icon: 'fa-scroll', classes: 'bg-amber-900/60 text-amber-400 border-amber-500/30' };
       case GameFormat.TOURNAMENT: 
-        return { label: 'Torneo', classes: 'bg-rose-900/40 text-rose-400 border-rose-500/20' };
+        return { label: 'Torneo', icon: 'fa-trophy', classes: 'bg-rose-900/60 text-rose-400 border-rose-500/30' };
       case GameFormat.SINGLE_PLAY: 
-        return { label: 'One-Shot', classes: 'bg-sky-900/40 text-sky-400 border-sky-500/20' };
+        return { label: 'One-Shot', icon: 'fa-bolt-lightning', classes: 'bg-sky-900/60 text-sky-400 border-sky-500/30' };
       default: 
-        return { label: 'Gara', classes: 'bg-slate-900/40 text-slate-400 border-slate-500/20' };
+        return { label: 'Gara', icon: 'fa-gamepad', classes: 'bg-slate-900/60 text-slate-400 border-slate-500/30' };
     }
   }, [data.format, isTable]);
 
-  const getGeekUrl = () => {
-    if (data.geekId) {
-      return isRPG 
-        ? `https://rpggeek.com/rpg/${data.geekId}` 
-        : `https://boardgamegeek.com/boardgame/${data.geekId}`;
-    }
-    return `https://boardgamegeek.com/results?searchname=${encodeURIComponent(data.gameName)}`;
-  };
-
   const actionButtons = (
-    <div className="flex items-center gap-1.5 md:gap-2">
+    <div className="flex items-center gap-2">
       {isTable ? (
         <button 
-          disabled={isInactive || (!isJoined && isFull)}
+          disabled={!isJoined && isFull}
           onClick={(e) => { e.stopPropagation(); onPrimaryAction(table!.id); }} 
-          className={`px-3 md:px-5 py-2 md:py-2.5 rounded-xl text-[10px] md:text-xs font-black uppercase tracking-wider transition-all whitespace-nowrap shadow-md ${
-            isJoined ? 'bg-red-600/10 text-red-500 border border-red-600/20 hover:bg-red-600 hover:text-white' :
-            (isFull || isInactive) ? 'bg-slate-800/50 text-slate-600 border border-slate-700' : 
-            `bg-${accentColor}-600 hover:bg-${accentColor}-500 text-white`
+          className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all whitespace-nowrap shadow-xl border ${
+            isJoined ? 'bg-red-600/20 text-red-400 border-red-500/30 hover:bg-red-600 hover:text-white' :
+            isFull ? 'bg-slate-800/80 text-slate-500 border-slate-700 cursor-not-allowed' : 
+            `bg-${accentColor}-600 hover:bg-${accentColor}-500 text-white border-${accentColor}-400/50`
           }`}
         >
-          {isInactive ? 'CONCLUSA' : isJoined ? 'Esci' : isFull ? 'PIENO' : 'PARTECIPA'}
+          {isJoined ? 'Esci' : isFull ? 'PIENO' : 'PARTECIPA'}
         </button>
       ) : (
-        <div className="flex items-center gap-1.5 md:gap-2">
-          <button onClick={(e) => { e.stopPropagation(); onPrimaryAction(proposal!.id); }} className={`px-2.5 md:px-4 py-2 md:py-2.5 rounded-xl flex items-center justify-center transition-all border gap-2 text-[10px] md:text-xs font-black uppercase tracking-wider ${isInterested ? 'bg-amber-600/20 text-amber-500 border-amber-600/30' : 'bg-slate-800/50 border-slate-700/50 text-slate-400'}`}>
-            <i className={`fa-${isInterested ? 'solid' : 'regular'} fa-star text-[10px] md:text-xs`}></i>
-            <span className="hidden sm:inline">Interessa</span>
+        <div className="flex items-center gap-2">
+          <button onClick={(e) => { e.stopPropagation(); onPrimaryAction(proposal!.id); }} className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all border ${isInterested ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-lg shadow-amber-500/20' : 'bg-slate-900/60 border-slate-700 text-slate-400 hover:text-white'}`}>
+            <i className={`fa-${isInterested ? 'solid' : 'regular'} fa-star text-xs`}></i>
           </button>
-          <button onClick={(e) => { e.stopPropagation(); onSecondaryAction && onSecondaryAction(proposal!.id); }} className="px-3 md:px-5 py-2 md:py-2.5 rounded-xl text-[10px] md:text-xs font-black uppercase tracking-wider bg-indigo-600 hover:bg-indigo-500 text-white transition-all shadow-md whitespace-nowrap">
-            Apri
+          <button onClick={(e) => { e.stopPropagation(); onSecondaryAction && onSecondaryAction(proposal!.id); }} className="px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest bg-indigo-600 hover:bg-indigo-500 text-white transition-all shadow-xl shadow-indigo-600/20 border border-indigo-400/30">
+            APRI
           </button>
         </div>
       )}
@@ -110,111 +98,106 @@ const GameCard: React.FC<GameCardProps> = ({
   return (
     <div 
       onClick={() => onViewDetail(data)}
-      className={`glass group relative rounded-xl border border-slate-800 flex flex-col gap-4 p-3 md:p-5 hover:border-${themeColor}-500/50 transition-all duration-300 shadow-sm hover:shadow-${themeColor}-500/10 animate-in slide-in-from-left-4 cursor-pointer h-full ${isInactive ? 'opacity-60 grayscale-[0.3]' : ''}`}
+      className={`group relative rounded-2xl overflow-hidden border border-slate-800 flex flex-col transition-all duration-500 shadow-sm hover:border-${themeColor}-500/50 hover:shadow-2xl hover:shadow-${themeColor}-500/10 cursor-pointer h-full min-h-[220px]`}
     >
-      {/* HEADER: BADGES (LEFT) & ACTIONS (RIGHT) */}
-      <div className="flex items-center justify-between gap-2 shrink-0">
-        <div className="flex flex-wrap items-center gap-1.5">
-          <span className={`px-1.5 py-0.5 h-5 rounded-md text-[9px] flex items-center justify-center font-black border border-slate-700 bg-slate-900/80 text-slate-400`}>
-            #{index}
-          </span>
+      {/* Background Image with Gradient Overlay */}
+      <div className="absolute inset-0 z-0">
+        {data.imageUrl ? (
+          <img 
+            src={data.imageUrl} 
+            alt="" 
+            className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110"
+          />
+        ) : (
+          <div className="w-full h-full bg-slate-950 flex items-center justify-center">
+            {isRPG ? (
+              <i className="fa-solid fa-dice-d20 text-8xl opacity-10 text-slate-400"></i>
+            ) : (
+              <img 
+                src="https://cf.geekdo-images.com/Cr0z-yDOu7GqlIhMhSvHnQ__imagepage@2x/img/VjsGk_8gY4nAhbfYxMtvtm368Zc=/fit-in/1800x1200/filters:strip_icc()/pic7631734.jpg" 
+                className="w-full h-full object-cover opacity-20 grayscale brightness-50 contrast-125"
+                alt="Board Game Society"
+              />
+            )}
+          </div>
+        )}
+        <div className={`absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/80 to-slate-900/40 group-hover:via-slate-950/70 transition-all`}></div>
+      </div>
 
-          {isNew && (
-            <span className="text-[7px] font-black px-1.5 py-0.5 h-5 flex items-center justify-center rounded bg-red-600 text-white uppercase tracking-widest shadow-lg animate-pulse">
-              NEW
+      {/* Content */}
+      <div className="relative z-10 p-5 flex-1 flex flex-col gap-4">
+        {/* Top Row: Badges & Rank */}
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="w-8 h-8 rounded-lg bg-slate-950/60 backdrop-blur-md border border-white/10 flex items-center justify-center text-[10px] font-black text-slate-400">
+              #{index}
             </span>
-          )}
+            {isNew && (
+              <span className="px-2 py-1 rounded-lg bg-red-600 text-white text-[8px] font-black uppercase tracking-widest animate-pulse shadow-lg">
+                NEW
+              </span>
+            )}
+            <span className={`px-2 py-1 rounded-lg text-[8px] font-black uppercase tracking-widest border backdrop-blur-md ${formatInfo.classes}`}>
+              <i className={`fa-solid ${formatInfo.icon} mr-1.5 text-[7px]`}></i>
+              {formatInfo.label}
+            </span>
+          </div>
 
-          <span className={`text-[7px] font-black px-1.5 py-0.5 h-5 flex items-center justify-center rounded border uppercase tracking-wider ${
-            isRPG 
-              ? 'bg-indigo-600/30 text-indigo-400 border-indigo-500/40' 
-              : 'bg-emerald-600/30 text-emerald-400 border-emerald-500/40'
-          }`}>
-            {isRPG ? 'GdR' : 'GdT'}
-          </span>
-
-          <span className={`text-[7px] font-black px-1.5 py-0.5 h-5 flex items-center justify-center rounded border uppercase tracking-wider ${formatInfo.classes}`}>
-            {formatInfo.label}
-          </span>
-        </div>
-
-        <div className="flex items-center gap-1.5 md:gap-2 ml-auto">
-          {actionButtons}
-          
           {canManage && (
-            <div className="flex items-center gap-1 border-l border-slate-800 pl-2 ml-1">
-              <button onClick={(e) => { e.stopPropagation(); onEdit(data); }} className="w-8 h-8 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-500 hover:text-white transition-all flex items-center justify-center border border-slate-700/50">
+            <div className="flex items-center gap-1">
+              <button onClick={(e) => { e.stopPropagation(); onEdit(data); }} className="w-8 h-8 rounded-lg bg-slate-950/60 backdrop-blur-md hover:bg-white/10 text-white/50 hover:text-white transition-all flex items-center justify-center border border-white/10">
                 <i className="fa-solid fa-pen text-[10px]"></i>
               </button>
-              <button onClick={(e) => { e.stopPropagation(); if (window.confirm('Eliminare definitivamente?')) onDelete(data.id); }} className="w-8 h-8 rounded-lg bg-red-900/20 hover:bg-red-600 text-red-500 hover:text-white transition-all flex items-center justify-center border border-red-500/30">
+              <button onClick={(e) => { e.stopPropagation(); if (window.confirm('Eliminare definitivamente?')) onDelete(data.id); }} className="w-8 h-8 rounded-lg bg-red-950/60 backdrop-blur-md hover:bg-red-600 text-red-400 hover:text-white transition-all flex items-center justify-center border border-red-500/20">
                 <i className="fa-solid fa-trash text-[10px]"></i>
               </button>
             </div>
           )}
         </div>
-      </div>
 
-      {/* GAME TITLE CLICCABILE */}
-      <div className="min-w-0 flex items-center">
-        <div className="flex-1 min-w-0">
-          <a 
-            href={getGeekUrl()} 
-            target="_blank" 
-            rel="noopener noreferrer" 
-            onClick={(e) => e.stopPropagation()}
-            className="block group/title"
-            title={isRPG ? "Vedi su RPGGeek" : "Vedi su BoardGameGeek"}
-          >
-            <h3 className="text-xl md:text-2xl font-bold text-white transition-colors uppercase tracking-tight leading-tight group-hover/title:text-indigo-400 break-words cursor-pointer underline-offset-4 decoration-indigo-500/0 hover:decoration-indigo-500/50 decoration-2">
-              {data.gameName}
-              <i className="fa-solid fa-arrow-up-right-from-square text-[10px] ml-2 opacity-0 group-hover/title:opacity-100 transition-opacity align-middle"></i>
-            </h3>
-          </a>
-          <p className="text-[10px] text-slate-500 font-medium italic mt-1">
-            Pubblicato il: {new Date(data.createdAt).toLocaleDateString('it-IT')}
+        {/* Middle Area: Title & System */}
+        <div className="mt-auto">
+          <p className={`text-[8px] font-black uppercase tracking-[0.2em] mb-1 ${isRPG ? 'text-indigo-400' : 'text-emerald-400'}`}>
+            {isRPG ? 'GDR System' : 'Board Game'}
+          </p>
+          <h3 className="text-xl md:text-2xl font-bold text-white leading-tight uppercase tracking-tight group-hover:text-white transition-colors">
+            {data.gameName}
+          </h3>
+          <p className="text-slate-400 text-[10px] line-clamp-2 mt-2 font-medium leading-relaxed max-w-sm">
+            {data.description}
           </p>
         </div>
-      </div>
 
-      {/* METADATA FOOTER GRID */}
-      <div className="flex flex-col sm:flex-row items-end justify-between gap-5 mt-auto border-t border-slate-800/50 pt-4">
-        <div className="flex flex-col sm:flex-row gap-4 sm:gap-8 w-full sm:w-auto">
-          {/* DATA */}
-          <div className="flex flex-col gap-1">
-            <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest">Data Sessione</span>
-            <div className="flex items-center gap-2.5">
-              <i className={`fa-regular fa-calendar ${isInactive ? 'text-red-400' : 'text-indigo-400'} text-base`}></i>
-              <span className={`text-sm md:text-base font-black whitespace-nowrap ${isInactive ? 'text-red-400/90' : 'text-slate-100'}`}>
-                {isTable ? new Date(table!.date).toLocaleDateString('it-IT', { day: 'numeric', month: 'short' }) : 'TBD'}
-                {isTable && ` • ${table!.time}`}
+        {/* Footer Row: Meta & Players */}
+        <div className="flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-white/10">
+          <div className="flex items-center gap-4">
+             <div className="flex flex-col">
+                <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-0.5">Data</span>
+                <span className="text-xs font-bold text-slate-200">
+                  {isTable ? new Date(table!.date).toLocaleDateString('it-IT', { day: 'numeric', month: 'short' }) : 'TBD'}
+                </span>
+             </div>
+             <div className="flex flex-col">
+                <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-0.5">{isTable ? 'Luogo' : 'Autore'}</span>
+                <span className="text-xs font-bold text-slate-200 truncate max-w-[100px]">
+                  {isTable ? table!.location.split(',')[0] : proposal!.proposer.name}
+                </span>
+             </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="flex -space-x-1.5">
+              {(isTable ? table!.currentPlayers : allUsers.filter(u => proposal!.interestedPlayerIds.includes(u.id))).slice(0, 3).map((p) => (
+                <img key={p.id} src={p.avatar} onClick={(e) => { e.stopPropagation(); onSelectMember(p.id); }} className="w-6 h-6 rounded-full border border-slate-900 object-cover cursor-pointer hover:z-10 shadow-sm" alt={p.name} />
+              ))}
+            </div>
+            <div className="flex flex-col items-end">
+              <span className="text-[7px] font-black text-slate-500 uppercase tracking-tighter">Posti</span>
+              <span className={`text-xs font-black ${isFull ? 'text-amber-400' : 'text-white'}`}>
+                {isTable ? `${table!.currentPlayers.length}/${table!.maxPlayers}` : `${proposal!.interestedPlayerIds.length}/${proposal!.maxPlayersGoal}`}
               </span>
             </div>
-          </div>
-
-          {/* LUOGO */}
-          <div className="flex flex-col gap-1 min-w-0">
-            <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest">{isTable ? 'Luogo' : 'Proponente'}</span>
-            <div className="flex items-center gap-2.5 min-w-0">
-              <i className={`fa-solid ${isTable ? 'fa-location-dot' : 'fa-user-pen'} ${isTable ? 'text-emerald-400' : 'text-amber-400'} text-base shrink-0`}></i>
-              <span className="text-sm md:text-base font-black text-slate-100 break-words leading-tight">
-                {isTable ? table!.location.split(',')[0] : proposal!.proposer.name}
-              </span>
-            </div>
-          </div>
-        </div>
-
-        {/* PARTICIPANTS */}
-        <div className="flex items-center gap-3 shrink-0">
-          <div className="flex -space-x-2 shrink-0">
-            {(isTable ? table!.currentPlayers : allUsers.filter(u => proposal!.interestedPlayerIds.includes(u.id))).slice(0, 3).map((p) => (
-              <img key={p.id} src={p.avatar} onClick={(e) => { e.stopPropagation(); onSelectMember(p.id); }} className="w-8 h-8 rounded-full border border-slate-900 object-cover cursor-pointer hover:z-10 shadow-sm" title={p.name} />
-            ))}
-          </div>
-          <div className="flex flex-col items-end shrink-0">
-            <span className="text-[8px] font-black text-slate-600 uppercase tracking-tighter">Posti</span>
-            <span className={`text-sm md:text-base font-black whitespace-nowrap ${isFull ? 'text-amber-400' : 'text-slate-100'}`}>
-              {isTable ? `${table!.currentPlayers.length}/${table!.maxPlayers}` : `${proposal!.interestedPlayerIds.length}/${proposal!.maxPlayersGoal}`}
-            </span>
+            {actionButtons}
           </div>
         </div>
       </div>

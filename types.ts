@@ -20,6 +20,16 @@ export interface CollectedGame {
   type: GameType;
   imageUrl?: string;
   geekId?: string;
+  minPlayers?: number;
+  maxPlayers?: number;
+  bestPlayers?: number;
+  difficulty?: number; // Scala 1-5 (Weight su BGG)
+  duration?: number; // Minuti medi
+  minDuration?: number; // Minuti minimi
+  maxDuration?: number; // Minuti massimi
+  isExpansion?: boolean;
+  yearpublished?: string;
+  rank?: number;
 }
 
 export interface Player {
@@ -28,7 +38,6 @@ export interface Player {
   avatar: string;
   isAdmin?: boolean;
   collection?: CollectedGame[];
-  // Fix: Added username and password fields to satisfy AuthModal requirements
   username?: string;
   password?: string;
 }

@@ -18,8 +18,14 @@ const GameAutocomplete: React.FC<GameAutocompleteProps> = ({ value, gameType, on
   const [isLoading, setIsLoading] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
+  // Sincronizzazione con il valore del genitore
   useEffect(() => {
     setQuery(value);
+    // Se il genitore svuota il campo (es. dopo l'aggiunta), chiudiamo il menu e puliamo i risultati
+    if (value === '') {
+      setResults([]);
+      setIsOpen(false);
+    }
   }, [value]);
 
   useEffect(() => {
@@ -38,10 +44,15 @@ const GameAutocomplete: React.FC<GameAutocompleteProps> = ({ value, gameType, on
     
     if (val.length > 2) {
       setIsLoading(true);
-      const games = await searchGeekGames(val, gameType);
-      setResults(games);
-      setIsOpen(true);
-      setIsLoading(false);
+      try {
+        const games = await searchGeekGames(val, gameType);
+        setResults(games);
+        setIsOpen(true);
+      } catch (e) {
+        console.error("Search error:", e);
+      } finally {
+        setIsLoading(false);
+      }
     } else {
       setResults([]);
       setIsOpen(false);
@@ -65,6 +76,7 @@ const GameAutocomplete: React.FC<GameAutocompleteProps> = ({ value, gameType, on
         <input
           type="text"
           value={query}
+          onFocus={() => { if (results.length > 0) setIsOpen(true); }}
           onChange={(e) => handleSearch(e.target.value)}
           placeholder={placeholder}
           className={className}
@@ -77,7 +89,7 @@ const GameAutocomplete: React.FC<GameAutocompleteProps> = ({ value, gameType, on
       </div>
 
       {isOpen && results.length > 0 && (
-        <div className="absolute z-[100] w-full mt-2 menu-solid rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+        <div className="absolute z-[200] w-full mt-2 menu-solid rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
           <div className="p-2 border-b border-slate-700/50 bg-slate-900/40">
             <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-2">Risultati {sourceLabel}</span>
           </div>
@@ -91,14 +103,22 @@ const GameAutocomplete: React.FC<GameAutocompleteProps> = ({ value, gameType, on
                 {game.image ? (
                   <img src={game.image} className="w-10 h-10 object-cover rounded-lg border border-slate-700" alt="" />
                 ) : (
-                  <div className="w-10 h-10 bg-slate-800 rounded-lg flex items-center justify-center text-slate-500">
-                    <i className={`fa-solid ${game.type === GameType.RPG ? 'fa-dice-d20' : 'fa-dice-six'}`}></i>
+                  <div className="w-10 h-10 bg-slate-800 rounded-lg flex items-center justify-center shrink-0 overflow-hidden border border-slate-700">
+                    {game.type === GameType.RPG ? (
+                      <i className="fa-solid fa-dice-d20 text-slate-500"></i>
+                    ) : (
+                      <img 
+                        src="https://cf.geekdo-images.com/Cr0z-yDOu7GqlIhMhSvHnQ__imagepage@2x/img/VjsGk_8gY4nAhbfYxMtvtm368Zc=/fit-in/1800x1200/filters:strip_icc()/pic7631734.jpg" 
+                        className="w-full h-full object-cover grayscale opacity-40"
+                        alt=""
+                      />
+                    )}
                   </div>
                 )}
-                <div className="flex flex-col">
+                <div className="flex flex-col min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-bold text-white leading-tight">{game.name}</span>
-                    <span className={`text-[7px] font-black px-1 rounded border uppercase ${game.type === GameType.RPG ? 'border-indigo-500/50 text-indigo-400' : 'border-emerald-500/50 text-emerald-400'}`}>
+                    <span className="text-sm font-bold text-white leading-tight truncate">{game.name}</span>
+                    <span className={`text-[7px] font-black px-1 rounded border uppercase shrink-0 ${game.type === GameType.RPG ? 'border-indigo-500/50 text-indigo-400' : 'border-emerald-500/50 text-emerald-400'}`}>
                       {game.type === GameType.RPG ? 'GDR' : 'GDT'}
                     </span>
                   </div>

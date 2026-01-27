@@ -22,9 +22,7 @@ const TableCard: React.FC<TableCardProps> = ({ table, currentUser, userRanks, on
   const isRPG = table.type === GameType.RPG;
   const isAdmin = currentUser?.isAdmin || false;
   
-  const SYSTEM_NOW = new Date('2026-01-23T08:06:00').getTime();
-  const today = '2026-01-23';
-  const isPast = table.date < today;
+  const SYSTEM_NOW = new Date().getTime();
 
   const isNew = useMemo(() => {
     const created = new Date(table.createdAt).getTime();
@@ -51,7 +49,7 @@ const TableCard: React.FC<TableCardProps> = ({ table, currentUser, userRanks, on
   const themeColorClass = isRPG ? 'indigo' : 'emerald';
 
   return (
-    <div className={`relative rounded-lg overflow-hidden transition-all duration-300 border border-slate-800 flex flex-col group bg-gradient-to-b from-slate-900/80 to-slate-950 shadow-sm hover:shadow-${themeColorClass}-500/20 ${isPast ? 'opacity-60 grayscale-[0.6]' : ''}`}>
+    <div className={`relative rounded-lg overflow-hidden transition-all duration-300 border border-slate-800 flex flex-col group bg-gradient-to-b from-slate-900/80 to-slate-950 shadow-sm hover:shadow-${themeColorClass}-500/20`}>
       <div className={`relative aspect-video overflow-hidden bg-slate-900 ${!imageLoaded ? 'animate-pulse' : ''}`}>
         <img 
           src={table.imageUrl || fallbackImage} 
@@ -62,16 +60,8 @@ const TableCard: React.FC<TableCardProps> = ({ table, currentUser, userRanks, on
           onError={(e) => { (e.target as HTMLImageElement).src = fallbackImage; setImageLoaded(true); }}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent opacity-50"></div>
-        <div className={`absolute bottom-0 left-0 w-full h-0.5 ${isPast ? 'bg-red-600' : isRPG ? 'bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.6)]' : 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]'}`}></div>
+        <div className={`absolute bottom-0 left-0 w-full h-0.5 ${isRPG ? 'bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.6)]' : 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.6)]'}`}></div>
         
-        <div className="absolute top-2 left-2 flex flex-col gap-1 items-start">
-          {isPast && (
-            <span className="text-[6px] uppercase font-black tracking-widest px-1.5 py-0.5 rounded backdrop-blur-sm border border-red-500/50 bg-red-900/60 text-red-300 animate-pulse">
-              NON ATTIVO
-            </span>
-          )}
-        </div>
-
         <div className="absolute top-2 right-2 flex flex-col gap-1 items-end">
           <div className="flex items-center gap-1">
             {isNew && (
@@ -123,10 +113,10 @@ const TableCard: React.FC<TableCardProps> = ({ table, currentUser, userRanks, on
         </div>
 
         <div className="grid grid-cols-1 gap-2 mb-3">
-          <div className={`flex items-center justify-between bg-slate-900/30 px-2 py-2 rounded border ${isPast ? 'border-red-500/20' : 'border-slate-800/50'}`}>
+          <div className={`flex items-center justify-between bg-slate-900/30 px-2 py-2 rounded border border-slate-800/50`}>
             <div className="flex items-center gap-2">
-              <i className={`fa-regular fa-calendar ${isPast ? 'text-red-400' : 'text-indigo-400'} text-xs`}></i>
-              <span className={`text-[11px] font-black ${isPast ? 'text-red-400/90' : 'text-slate-200'}`}>
+              <i className={`fa-regular fa-calendar text-indigo-400 text-xs`}></i>
+              <span className={`text-[11px] font-black text-slate-200`}>
                 {new Date(table.date).toLocaleDateString('it-IT', { day: 'numeric', month: 'short' })}
               </span>
             </div>
@@ -142,14 +132,10 @@ const TableCard: React.FC<TableCardProps> = ({ table, currentUser, userRanks, on
         </div>
 
         <div className="flex items-center gap-1.5 mt-auto pt-2 border-t border-slate-800/50">
-          {!isPast ? (
-            isJoined ? (
-              <button onClick={() => onLeave(table.id)} className="flex-1 py-1.5 rounded text-[8px] font-black uppercase tracking-widest bg-red-600/10 text-red-500 border border-red-600/20 hover:bg-red-600 hover:text-white transition-all">Esci</button>
-            ) : (
-              <button disabled={isFull} onClick={() => onJoin(table.id)} className={`flex-1 py-1.5 rounded text-[8px] font-black uppercase tracking-widest transition-all ${isFull ? 'bg-slate-800 text-slate-600 cursor-not-allowed border border-slate-700' : `bg-${themeColorClass}-600 hover:bg-${themeColorClass}-500 text-white`}`}>{isFull ? 'PIENO' : 'PARTECIPA'}</button>
-            )
+          {isJoined ? (
+            <button onClick={() => onLeave(table.id)} className="flex-1 py-1.5 rounded text-[8px] font-black uppercase tracking-widest bg-red-600/10 text-red-500 border border-red-600/20 hover:bg-red-600 hover:text-white transition-all">Esci</button>
           ) : (
-            <button disabled className="flex-1 py-1.5 rounded text-[8px] font-black uppercase tracking-widest bg-slate-800 text-slate-600 cursor-not-allowed border border-slate-700">CONCLUSO</button>
+            <button disabled={isFull} onClick={() => onJoin(table.id)} className={`flex-1 py-1.5 rounded text-[8px] font-black uppercase tracking-widest transition-all ${isFull ? 'bg-slate-800 text-slate-600 cursor-not-allowed border border-slate-700' : `bg-${themeColorClass}-600 hover:bg-${themeColorClass}-500 text-white`}`}>{isFull ? 'PIENO' : 'PARTECIPA'}</button>
           )}
           
           {(isHost || isAdmin) && (
