@@ -1,4 +1,3 @@
-
 import React, { useMemo } from 'react';
 import { GameTable, GameProposal, GameType, GameFormat, Player } from '../types';
 
@@ -15,6 +14,7 @@ interface GameCardProps {
   onSelectMember: (userId: string) => void;
   onViewDetail: (data: any) => void;
   index: number;
+  viewMode?: 'grid' | 'compact';
 }
 
 const GameCard: React.FC<GameCardProps> = ({ 
@@ -29,7 +29,8 @@ const GameCard: React.FC<GameCardProps> = ({
   onDelete,
   onSelectMember,
   onViewDetail,
-  index
+  index,
+  viewMode = 'grid'
 }) => {
   const isTable = type === 'table';
   const table = isTable ? (data as GameTable) : null;
@@ -54,6 +55,18 @@ const GameCard: React.FC<GameCardProps> = ({
   const themeColor = isTable ? (isRPG ? 'indigo' : 'emerald') : 'amber';
   const accentColor = isRPG ? 'indigo' : 'emerald';
 
+  const BGG_ICON_URL = "https://cf.geekdo-images.com/Cr0z-yDOu7GqlIhMhSvHnQ__imagepage@2x/img/VjsGk_8gY4nAhbfYxMtvtm368Zc=/fit-in/1800x1200/filters:strip_icc()/pic7631734.jpg";
+
+  const getGeekUrl = () => {
+    if (data.geekId) {
+      return data.type === GameType.RPG 
+        ? `https://rpggeek.com/rpg/${data.geekId}` 
+        : `https://boardgamegeek.com/boardgame/${data.geekId}`;
+    }
+    const domain = data.type === GameType.RPG ? 'rpggeek.com' : 'boardgamegeek.com';
+    return `https://${domain}/results?searchname=${encodeURIComponent(data.gameName)}`;
+  };
+
   const formatInfo = useMemo(() => {
     const format = isTable ? table!.format : proposal!.format;
     switch (format) {
@@ -67,6 +80,106 @@ const GameCard: React.FC<GameCardProps> = ({
         return { label: 'Gara', icon: 'fa-gamepad', classes: 'bg-slate-900/60 text-slate-400 border-slate-500/30' };
     }
   }, [data.format, isTable]);
+
+  if (viewMode === 'compact') {
+    return (
+      <div 
+        onClick={() => onViewDetail(data)}
+        className={`group relative min-h-[70px] py-2 flex flex-row items-center gap-3 md:gap-4 px-4 bg-slate-900/80 backdrop-blur-md border border-slate-800 rounded-xl transition-all duration-300 hover:border-${themeColor}-500/50 hover:bg-slate-800/90 cursor-pointer overflow-hidden`}
+      >
+        <span className="w-8 h-8 shrink-0 rounded-lg bg-slate-950/60 border border-white/5 flex items-center justify-center text-[9px] font-black text-slate-500">
+          #{index}
+        </span>
+
+        {/* Info Principali */}
+        <div className="flex flex-col min-w-0 flex-1 py-1">
+          <div className="flex items-center gap-2">
+            {/* Immagine BGG ottimizzata (Ridotta del 20%) */}
+            <a 
+              href={getGeekUrl()} 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              onClick={(e) => e.stopPropagation()}
+              className="w-5 h-5 shrink-0 rounded-md overflow-hidden border border-white/10 hover:border-indigo-400 transition-all shadow-md group/geek"
+              title="Vedi su BoardGameGeek / RPGGeek"
+            >
+              <img src={BGG_ICON_URL} className="w-full h-full object-cover transition-transform group-hover/geek:scale-110" alt="BGG" />
+            </a>
+            <h3 className="text-sm font-bold text-white group-hover:text-indigo-400 transition-colors uppercase tracking-tight break-words">
+              {data.gameName}
+            </h3>
+            {isNew && <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse shadow-[0_0_5px_rgba(239,68,68,0.8)]"></span>}
+          </div>
+          <div className="flex items-center gap-2 mt-0.5 ml-7">
+            <span className={`text-[7px] font-black uppercase tracking-widest ${isRPG ? 'text-indigo-400' : 'text-emerald-400'}`}>
+              {isRPG ? 'GDR' : 'GDT'}
+            </span>
+            <span className="text-[7px] text-slate-600 font-bold">•</span>
+            <span className="text-[7px] text-slate-500 font-bold uppercase truncate">
+              {isTable ? table!.location.split(',')[0] : proposal!.proposer.name}
+            </span>
+          </div>
+        </div>
+
+        {/* Badge Formato (Solo Desktop) */}
+        <div className="hidden lg:flex items-center gap-2 px-2 border-l border-white/5 h-10">
+           <span className={`px-2 py-0.5 rounded-md text-[7px] font-black uppercase tracking-widest border ${formatInfo.classes}`}>
+              {formatInfo.label}
+           </span>
+        </div>
+
+        {/* Data & Ora */}
+        <div className="flex flex-col items-center justify-center px-3 md:px-4 border-l border-white/5 h-10 min-w-[65px] md:min-w-[90px] shrink-0">
+           <div className="flex items-center gap-1.5">
+             <i className="fa-regular fa-calendar text-indigo-400 text-[8px]"></i>
+             <span className="text-[10px] font-bold text-slate-200 uppercase whitespace-nowrap">
+               {isTable ? new Date(table!.date).toLocaleDateString('it-IT', { day: 'numeric', month: 'short' }) : 'TBD'}
+             </span>
+           </div>
+           {isTable && (
+             <div className="flex items-center gap-1.5 mt-0.5">
+               <i className="fa-regular fa-clock text-slate-500 text-[8px]"></i>
+               <span className="text-[9px] font-bold text-slate-400">{table!.time}</span>
+             </div>
+           )}
+        </div>
+
+        {/* Posti */}
+        <div className="flex flex-col items-center justify-center px-3 md:px-4 border-l border-white/5 h-10 shrink-0 min-w-[50px]">
+           <span className="text-[7px] font-black text-slate-500 uppercase tracking-tighter">Posti</span>
+           <span className={`text-[11px] font-black ${isFull ? 'text-amber-400' : 'text-white'}`}>
+            {isTable ? `${table!.currentPlayers.length}/${table!.maxPlayers}` : `${proposal!.interestedPlayerIds.length}/${proposal!.maxPlayersGoal}`}
+           </span>
+        </div>
+
+        {/* Azione */}
+        <div className="flex items-center gap-2 pr-1 shrink-0">
+          {isTable ? (
+            <button 
+              onClick={(e) => { e.stopPropagation(); onPrimaryAction(table!.id); }} 
+              className={`h-9 px-3 md:px-4 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all border ${
+                isJoined ? 'bg-red-600/10 text-red-400 border-red-500/20 hover:bg-red-600 hover:text-white' :
+                isFull ? 'bg-slate-800 text-slate-600 border-slate-700 cursor-not-allowed' : 
+                `bg-${accentColor}-600/20 text-${accentColor}-400 border-${accentColor}-500/30 hover:bg-${accentColor}-600 hover:text-white`
+              }`}
+              disabled={!isJoined && isFull}
+            >
+              {isJoined ? 'Esci' : isFull ? 'OFF' : 'In'}
+            </button>
+          ) : (
+            <button 
+              onClick={(e) => { e.stopPropagation(); onPrimaryAction(proposal!.id); }} 
+              className={`w-9 h-9 rounded-lg flex items-center justify-center transition-all border ${isInterested ? 'bg-amber-500 text-slate-950 border-amber-400' : 'bg-slate-800/60 border-slate-700 text-slate-500'}`}
+            >
+              <i className={`fa-${isInterested ? 'solid' : 'regular'} fa-star text-[10px]`}></i>
+            </button>
+          )}
+        </div>
+
+        <div className={`absolute bottom-0 left-0 w-full h-0.5 bg-${themeColor}-500/20 group-hover:bg-${themeColor}-500 transition-colors`}></div>
+      </div>
+    );
+  }
 
   const actionButtons = (
     <div className="flex items-center gap-2">
@@ -142,9 +255,22 @@ const GameCard: React.FC<GameCardProps> = ({
           <p className={`text-[8px] font-black uppercase tracking-[0.2em] mb-1 ${isRPG ? 'text-indigo-400' : 'text-emerald-400'}`}>
             {isRPG ? 'GDR System' : 'Board Game'}
           </p>
-          <h3 className="text-xl md:text-2xl font-bold text-white leading-tight uppercase tracking-tight group-hover:text-indigo-400 transition-colors">
-            {data.gameName}
-          </h3>
+          <div className="flex items-center gap-3">
+             {/* Immagine BGG ottimizzata (Ridotta del 20%) */}
+             <a 
+              href={getGeekUrl()} 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              onClick={(e) => e.stopPropagation()}
+              className="w-8 h-8 md:w-10 md:h-10 shrink-0 rounded-xl overflow-hidden border border-white/10 hover:border-indigo-400 transition-all shadow-xl group/geek"
+              title="Vedi su BoardGameGeek / RPGGeek"
+            >
+              <img src={BGG_ICON_URL} className="w-full h-full object-cover transition-transform group-hover/geek:scale-110" alt="BGG" />
+            </a>
+            <h3 className="text-xl md:text-2xl font-bold text-white leading-tight uppercase tracking-tight group-hover:text-indigo-400 transition-colors">
+              {data.gameName}
+            </h3>
+          </div>
           <p className="text-slate-400 text-[10px] line-clamp-3 mt-2 font-medium leading-relaxed max-w-sm">
             {data.description}
           </p>

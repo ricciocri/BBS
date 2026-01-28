@@ -1,4 +1,3 @@
-
 import { GoogleGenAI } from "@google/genai";
 import { GameType, CollectedGame } from "../types";
 
@@ -66,7 +65,8 @@ export const getGeekGameDetails = async (gameId: string, type: GameType): Promis
     "minPlayers": numero, 
     "maxPlayers": numero, 
     "difficulty": numero_float (Weight BGG),
-    "duration": numero,
+    "minDuration": numero (min playing time),
+    "maxDuration": numero (max playing time),
     "isExpansion": boolean,
     "rank": numero.`;
 
@@ -89,7 +89,6 @@ export const getGeekGameDetails = async (gameId: string, type: GameType): Promis
  */
 export const fetchBggUserCollection = async (username: string): Promise<CollectedGame[]> => {
   try {
-    // Il prompt è ora molto più direttivo sulla navigazione URL
     const prompt = `Naviga ESCLUSIVAMENTE all'indirizzo 'https://boardgamegeek.com/collection/user/${username}' utilizzando il tool googleSearch.
     Verifica che il profilo appartenga esattamente all'utente "${username}". 
     Recupera l'elenco dei giochi che l'utente ha segnato come 'Owned'.
@@ -103,11 +102,12 @@ export const fetchBggUserCollection = async (username: string): Promise<Collecte
     - yearpublished
     - minPlayers, maxPlayers
     - difficulty (il valore 'Weight' medio)
-    - duration
+    - minDuration (min playing time)
+    - maxDuration (max playing time)
     - rank
     
     Restituisci ESCLUSIVAMENTE un array JSON di oggetti.
-    Struttura: {"id": "bgg_[id]", "name": "str", "type": "BOARD_GAME", "geekId": "str", "yearpublished": "str", "minPlayers": int, "maxPlayers": int, "difficulty": float, "duration": int, "rank": int}`;
+    Struttura: {"id": "bgg_[id]", "name": "str", "type": "BOARD_GAME", "geekId": "str", "yearpublished": "str", "minPlayers": int, "maxPlayers": int, "difficulty": float, "minDuration": int, "maxDuration": int, "rank": int}`;
 
     const response = await ai.models.generateContent({
       model: 'gemini-3-pro-preview',

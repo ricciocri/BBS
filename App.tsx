@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect } from 'react';
 import Header from './components/Header';
 import GameCard from './components/GameCard';
@@ -27,7 +26,7 @@ const initialAdvancedFilters: AdvancedFilterState = {
   locationSearch: '',
   participantSearch: '',
   showOnlyJoined: false,
-  showPastTables: false,
+  showOnlyNew: false,
   showOnlyMyProposals: false,
   formatFilter: 'all',
   typeFilter: 'all'
@@ -39,11 +38,11 @@ const App: React.FC = () => {
   const [allUsers, setAllUsers] = useState<Player[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [viewMode, setViewMode] = useState<'grid' | 'compact'>('grid');
+  const [showScrollTop, setShowScrollTop] = useState(false);
   
-  // Impostiamo Mauro come utente loggato di default (ID: admin-mauro)
   const [currentUser, setCurrentUser] = useState<Player | null>(MOCK_USERS.find(u => u.id === 'admin-mauro') || null);
 
-  // Stati per la gestione della navigazione e delle azioni post-login
   const [view, setView] = useState<View>('home');
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [selectedTableId, setSelectedTableId] = useState<string | null>(null);
@@ -62,7 +61,6 @@ const App: React.FC = () => {
   const [editingProposal, setEditingProposal] = useState<Partial<GameProposal> | null>(null);
   const [prefilledPlayers, setPrefilledPlayers] = useState<Player[] | null>(null);
 
-  // Inizializzazione dati
   useEffect(() => {
     const initData = async () => {
       setIsLoading(true);
@@ -85,10 +83,21 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    const handleScroll = () => {
+      setShowScrollTop(window.scrollY > 400);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  useEffect(() => {
     window.scrollTo(0, 0);
   }, [view, selectedUserId, selectedTableId, selectedProposalId]);
 
-  // Esegue l'azione in sospeso dopo il login
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   useEffect(() => {
     if (currentUser && pendingAction) {
       if (pendingAction.type === 'join') {
@@ -100,16 +109,26 @@ const App: React.FC = () => {
     }
   }, [currentUser, pendingAction]);
 
-  const handleUpdateCollection = async (userId: string, newCollection: CollectedGame[]) => {
+  const handleUpdateUser = async (updatedUser: Player) => {
     setIsSyncing(true);
-    const updatedUser = allUsers.find(u => u.id === userId);
-    if (updatedUser) {
-      const newUser = { ...updatedUser, collection: newCollection };
-      await db.updateUser(newUser);
-      setAllUsers(prev => prev.map(u => u.id === userId ? newUser : u));
-      if (currentUser?.id === userId) setCurrentUser(newUser);
+    try {
+      await db.updateUser(updatedUser);
+      setAllUsers(prev => prev.map(u => u.id === updatedUser.id ? updatedUser : u));
+      if (currentUser?.id === updatedUser.id) {
+        setCurrentUser(updatedUser);
+      }
+    } catch (error) {
+      console.error("Errore aggiornamento utente:", error);
+    } finally {
+      setIsSyncing(false);
     }
-    setIsSyncing(false);
+  };
+
+  const handleUpdateCollection = async (userId: string, newCollection: CollectedGame[]) => {
+    const userToUpdate = allUsers.find(u => u.id === userId);
+    if (userToUpdate) {
+      handleUpdateUser({ ...userToUpdate, collection: newCollection });
+    }
   };
 
   const handleJoinTable = async (tableId: string) => {
@@ -206,7 +225,6 @@ const App: React.FC = () => {
     if (!currentUser) return;
     setIsSyncing(true);
 
-    // Se stiamo modificando un tavolo ESISTENTE (non una conversione da proposta)
     if (editingTable && editingTable.id && !prefilledPlayers) {
       const updatedTable: GameTable = {
         ...editingTable as GameTable,
@@ -216,7 +234,6 @@ const App: React.FC = () => {
       setTables(prev => prev.map(t => t.id === updatedTable.id ? updatedTable : t));
       setEditingTable(null);
     } else {
-      // MODALITÀ CREAZIONE (o conversione da proposta)
       const initialPlayers = prefilledPlayers 
         ? [currentUser, ...prefilledPlayers.filter(p => p.id !== currentUser.id)] 
         : [currentUser];
@@ -235,7 +252,9 @@ const App: React.FC = () => {
       setEditingTable(null);
     }
 
-    setView('home');
+    if (selectedUserId) setView('profile');
+    else setView('home');
+    
     setPrefilledPlayers(null);
     setIsSyncing(false);
   };
@@ -264,7 +283,9 @@ const App: React.FC = () => {
       setProposals(prev => [newProp, ...prev]);
     }
 
-    setView('proposals');
+    if (selectedUserId) setView('profile');
+    else setView('proposals');
+    
     setIsSyncing(false);
   };
 
@@ -319,7 +340,13 @@ const App: React.FC = () => {
       const matchesJoined = !advancedFilters.showOnlyJoined || (currentUser && t.currentPlayers.some(p => p.id === currentUser.id));
       const matchesLocation = !advancedFilters.locationSearch || t.location.toLowerCase().includes(advancedFilters.locationSearch.toLowerCase());
       const matchesDate = !advancedFilters.dateFrom || t.date >= advancedFilters.dateFrom;
-      return matchesSearch && matchesType && matchesFormat && matchesJoined && matchesLocation && matchesDate && (advancedFilters.showPastTables || t.date >= TODAY_STR);
+      
+      const matchesNew = !advancedFilters.showOnlyNew || (() => {
+        const created = new Date(t.createdAt).getTime();
+        return (SIMULATED_NOW.getTime() - created) < 24 * 60 * 60 * 1000;
+      })();
+
+      return matchesSearch && matchesType && matchesFormat && matchesJoined && matchesLocation && matchesDate && matchesNew && (t.date >= TODAY_STR);
     });
     if (sortOption === 'creation') result.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
     else if (sortOption === 'session') result.sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
@@ -347,7 +374,13 @@ const App: React.FC = () => {
       const matchesMyProp = !advancedFilters.showOnlyMyProposals || (currentUser && p.proposer?.id === currentUser.id);
       const matchesJoined = !advancedFilters.showOnlyJoined || (currentUser && p.interestedPlayerIds.includes(currentUser.id));
       const matchesFormat = advancedFilters.formatFilter === 'all' || (advancedFilters.formatFilter === 'campaign' && p.format === GameFormat.CAMPAIGN) || (advancedFilters.formatFilter === 'single' && p.format === GameFormat.SINGLE_PLAY) || (advancedFilters.formatFilter === 'tournament' && p.format === GameFormat.TOURNAMENT);
-      return matchesSearch && matchesType && matchesMyProp && matchesJoined && matchesFormat;
+      
+      const matchesNew = !advancedFilters.showOnlyNew || (() => {
+        const created = new Date(p.createdAt).getTime();
+        return (SIMULATED_NOW.getTime() - created) < 24 * 60 * 60 * 1000;
+      })();
+
+      return matchesSearch && matchesType && matchesMyProp && matchesJoined && matchesFormat && matchesNew;
     });
     result.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
     return result;
@@ -375,16 +408,28 @@ const App: React.FC = () => {
     );
   }
 
+  const handleLogout = () => {
+    setCurrentUser(null);
+    setSelectedUserId(null);
+    setEditingTable(null);
+    setEditingProposal(null);
+    setSelectedTableId(null);
+    setSelectedProposalId(null);
+    setView('home');
+  };
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-200">
       <Header 
         user={currentUser} currentView={view} rankingPeriod={rankingPeriod}
         userRank={currentUser ? userStats[currentUser.id]?.rank : undefined}
         userScore={currentUser ? userStats[currentUser.id]?.score : undefined}
-        onHomeClick={() => { setView('home'); setEditingTable(null); }} onProposalsClick={() => { setView('proposals'); setEditingProposal(null); }}
-        onStatsClick={() => setView('stats')} onMembersClick={() => setView('members')}
+        onHomeClick={() => { setView('home'); setEditingTable(null); setSelectedUserId(null); }} 
+        onProposalsClick={() => { setView('proposals'); setEditingProposal(null); setSelectedUserId(null); }}
+        onStatsClick={() => { setView('stats'); setSelectedUserId(null); }} 
+        onMembersClick={() => setView('members')}
         onAdminClick={() => setView('admin-dashboard')} onNotificationsClick={() => setView('notifications')}
-        onAuthClick={() => setIsAuthModalOpen(true)} onLogout={() => setCurrentUser(null)}
+        onAuthClick={() => setIsAuthModalOpen(true)} onLogout={handleLogout}
         onProfileClick={(id) => { setSelectedUserId(id); setView('profile'); }}
         notifications={notifications} upcomingCount={tables.filter(t => t.date >= TODAY_STR).length}
         proposalsCount={proposals.length} memberCount={allUsers.length}
@@ -397,6 +442,15 @@ const App: React.FC = () => {
           <span className="text-[10px] font-black text-white uppercase tracking-widest">Sincronizzazione...</span>
         </div>
       )}
+
+      {/* Torna su Flottante Globale */}
+      <button 
+        onClick={scrollToTop}
+        className={`fixed bottom-24 right-6 z-[80] w-12 h-12 rounded-2xl glass border border-indigo-500/30 text-indigo-400 flex items-center justify-center shadow-2xl transition-all duration-500 hover:bg-indigo-600 hover:text-white hover:border-indigo-400 active:scale-90 ${showScrollTop && view !== 'table-detail' && view !== 'proposal-detail' ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8 pointer-events-none'}`}
+        title="Torna a inizio pagina"
+      >
+        <i className="fa-solid fa-chevron-up text-lg"></i>
+      </button>
 
       <main className="max-w-7xl mx-auto px-4 md:px-6 pb-20 pt-8">
         {view === 'home' && (
@@ -416,19 +470,19 @@ const App: React.FC = () => {
             </div>
 
             <AdvancedFilters mode="tables" filters={advancedFilters} onChange={setAdvancedFilters} onReset={() => setAdvancedFilters(initialAdvancedFilters)} isVisible={showAdvanced} />
-            <FeedControls mode="tables" sort={sortOption} group={groupOption} onSortChange={setSortOption} onGroupChange={setGroupOption} />
+            <FeedControls mode="tables" sort={sortOption} group={groupOption} onSortChange={setSortOption} onGroupChange={setGroupOption} viewMode={viewMode} onViewModeChange={setViewMode} />
 
             <div className="space-y-10">
               {(Object.entries(groupedTables) as [string, GameTable[]][]).map(([groupKey, groupItems], gIdx) => (
                 <div key={groupKey} className="space-y-4 animate-in fade-in duration-500" style={{ animationDelay: `${gIdx * 50}ms` }}>
                   {groupOption !== 'none' && (
                     <div className="flex items-center gap-3 px-2">
-                      <div className={`w-2 h-2 rounded-full bg-indigo-500 shadow-[0_0_8px_rgba(99,102,241,0.5)]`}></div>
+                      <div className={`w-2 h-2 rounded-full bg-sky-500 shadow-[0_0_8px_rgba(14,165,233,0.5)]`}></div>
                       <h3 className="text-xs font-black uppercase tracking-[0.2em] text-white/70">{groupKey}</h3>
-                      <div className="flex-1 h-px bg-gradient-to-r from-slate-800 to-transparent"></div>
+                      <div className="flex-1 h-px bg-gradient-to-r from-sky-500/40 to-transparent"></div>
                     </div>
                   )}
-                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                  <div className={viewMode === 'grid' ? "grid grid-cols-1 xl:grid-cols-2 gap-4" : "flex flex-col gap-2"}>
                     {groupItems.map((table) => (
                       <GameCard 
                         key={table.id} type="table" data={table} currentUser={currentUser} userRanks={userRanks} allUsers={allUsers} 
@@ -438,6 +492,7 @@ const App: React.FC = () => {
                         onDelete={handleDeleteTable}
                         onSelectMember={(id) => { setSelectedUserId(id); setView('profile'); }}
                         onViewDetail={(t) => { setSelectedTableId(t.id); setView('table-detail'); }}
+                        viewMode={viewMode}
                       />
                     ))}
                   </div>
@@ -464,19 +519,19 @@ const App: React.FC = () => {
               </div>
 
               <AdvancedFilters mode="proposals" filters={advancedFilters} onChange={setAdvancedFilters} onReset={() => setAdvancedFilters(initialAdvancedFilters)} isVisible={showAdvanced} />
-              <FeedControls mode="proposals" sort={sortOption} group={groupOption} onSortChange={setSortOption} onGroupChange={setGroupOption} />
+              <FeedControls mode="proposals" sort={sortOption} group={groupOption} onSortChange={setSortOption} onGroupChange={setGroupOption} viewMode={viewMode} onViewModeChange={setViewMode} />
 
               <div className="space-y-10">
                 {(Object.entries(groupedProposals) as [string, GameProposal[]][]).map(([groupKey, groupItems], gIdx) => (
                   <div key={groupKey} className="space-y-4 animate-in fade-in duration-500" style={{ animationDelay: `${gIdx * 50}ms` }}>
                     {groupOption !== 'none' && (
                       <div className="flex items-center gap-3 px-2">
-                        <div className={`w-2 h-2 rounded-full bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]`}></div>
+                        <div className={`w-2 h-2 rounded-full bg-sky-500 shadow-[0_0_8px_rgba(14,165,233,0.5)]`}></div>
                         <h3 className="text-xs font-black uppercase tracking-[0.2em] text-white/70">{groupKey}</h3>
-                        <div className="flex-1 h-px bg-gradient-to-r from-slate-800 to-transparent"></div>
+                        <div className="flex-1 h-px bg-gradient-to-r from-sky-500/40 to-transparent"></div>
                       </div>
                     )}
-                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                    <div className={viewMode === 'grid' ? "grid grid-cols-1 xl:grid-cols-2 gap-4" : "flex flex-col gap-2"}>
                       {groupItems.map((proposal) => (
                         <GameCard 
                           key={proposal.id} type="proposal" data={proposal} currentUser={currentUser} userRanks={userRanks} allUsers={allUsers} 
@@ -491,6 +546,7 @@ const App: React.FC = () => {
                           onDelete={handleDeleteProposal}
                           onSelectMember={(id) => { setSelectedUserId(id); setView('profile'); }}
                           onViewDetail={(p) => { setSelectedProposalId(p.id); setView('proposal-detail'); }}
+                          viewMode={viewMode}
                         />
                       ))}
                     </div>
@@ -538,6 +594,7 @@ const App: React.FC = () => {
             onExpressInterest={handleToggleInterest} onSelectMember={setSelectedUserId}
             onCreateTable={() => setView('create')} onCreateProposal={() => setView('create-proposal')}
             onUpdateCollection={handleUpdateCollection}
+            onUpdateUser={handleUpdateUser}
             onViewTableDetail={(t) => { setSelectedTableId(t.id); setView('table-detail'); }}
             onViewProposalDetail={(p) => { setSelectedProposalId(p.id); setView('proposal-detail'); }}
           />
@@ -545,15 +602,38 @@ const App: React.FC = () => {
 
         {view === 'stats' && <StatsModule tables={tables} user={currentUser} onBack={() => setView('home')} />}
         {view === 'members' && <MemberList allUsers={allUsers} userRanks={userRanks} userStats={userStats} currentUser={currentUser} rankingPeriod={rankingPeriod} onRankingPeriodChange={setRankingPeriod} onSelectMember={(id) => { setSelectedUserId(id); setView('profile'); }} tables={tables} proposals={proposals} />}
-        {(view === 'create' || view === 'edit') && <TableForm onCancel={() => { setView('home'); setEditingTable(null); }} onSubmit={handleCreateTable} initialData={editingTable} isConversion={!!prefilledPlayers} />}
-        {(view === 'create-proposal' || view === 'edit-proposal') && <ProposalForm onCancel={() => { setView('proposals'); setEditingProposal(null); }} onSubmit={handleCreateProposal} initialData={editingProposal} />}
+        
+        {(view === 'create' || view === 'edit') && (
+          <TableForm 
+            onCancel={() => { 
+              if (selectedUserId) setView('profile');
+              else setView('home'); 
+              setEditingTable(null); 
+            }} 
+            onSubmit={handleCreateTable} 
+            initialData={editingTable} 
+            isConversion={!!prefilledPlayers} 
+          />
+        )}
+
+        {(view === 'create-proposal' || view === 'edit-proposal') && (
+          <ProposalForm 
+            onCancel={() => { 
+              if (selectedUserId) setView('profile');
+              else setView('proposals'); 
+              setEditingProposal(null); 
+            }} 
+            onSubmit={handleCreateProposal} 
+            initialData={editingProposal} 
+          />
+        )}
       </main>
 
       <AuthModal 
         isOpen={isAuthModalOpen} 
         onClose={() => {
           setIsAuthModalOpen(false);
-          setPendingAction(null); // Pulisce l'azione in sospeso se l'utente annulla il login
+          setPendingAction(null); 
         }} 
         onLogin={(name) => {
           const user = allUsers.find(u => u.name === name);
@@ -561,8 +641,6 @@ const App: React.FC = () => {
             setCurrentUser(user);
           }
           setIsAuthModalOpen(false);
-          // La view corrente NON viene resettata, l'utente rimane dove si trovava.
-          // L'azione pendente verrà eseguita tramite lo useEffect dedicato.
         }} 
       />
     </div>

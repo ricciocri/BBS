@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { GameTable, GameProposal, GameType, GameFormat, Player } from '../types';
 
 interface GameDetailViewProps {
@@ -30,11 +30,13 @@ const GameDetailView: React.FC<GameDetailViewProps> = ({
   onDelete
 }) => {
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showScrollTop, setShowScrollTop] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  
   const isTable = type === 'table';
   const table = isTable ? (data as GameTable) : null;
   const proposal = !isTable ? (data as GameProposal) : null;
 
-  // Utilizziamo la data simulata del sistema per coerenza con il resto dell'app
   const today = '2026-01-23';
   const isInactive = isTable 
     ? table!.date < today 
@@ -45,15 +47,33 @@ const GameDetailView: React.FC<GameDetailViewProps> = ({
   const isInterested = !isTable && currentUser ? proposal!.interestedPlayerIds.includes(currentUser.id) : false;
   const isFull = isTable ? table!.currentPlayers.length >= table!.maxPlayers : proposal!.interestedPlayerIds.length >= proposal!.maxPlayersGoal;
   
-  const themeColor = isTable ? (isRPG ? 'indigo' : 'emerald') : 'amber';
-
   const participants = isTable 
     ? table!.currentPlayers 
     : allUsers.filter(u => proposal!.interestedPlayerIds.includes(u.id));
 
   const sortedParticipants = [...participants].sort((a, b) => (userRanks[a.id] || 999) - (userRanks[b.id] || 999));
-
   const canManage = (isTable && currentUser?.id === table!.hostId) || (!isTable && currentUser?.id === proposal!.proposer.id);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      if (containerRef.current) {
+        setShowScrollTop(containerRef.current.scrollTop > 300);
+      }
+    };
+    const container = containerRef.current;
+    if (container) {
+      container.addEventListener('scroll', handleScroll);
+    }
+    return () => {
+      if (container) {
+        container.removeEventListener('scroll', handleScroll);
+      }
+    };
+  }, []);
+
+  const scrollToTop = () => {
+    containerRef.current?.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   const getFormatDetails = () => {
     const format = isTable ? table!.format : proposal!.format;
@@ -77,7 +97,8 @@ const GameDetailView: React.FC<GameDetailViewProps> = ({
         ? `https://rpggeek.com/rpg/${data.geekId}` 
         : `https://boardgamegeek.com/boardgame/${data.geekId}`;
     }
-    return `https://boardgamegeek.com/results?searchname=${encodeURIComponent(data.gameName)}`;
+    const domain = isRPG ? 'rpggeek.com' : 'boardgamegeek.com';
+    return `https://${domain}/results?searchname=${encodeURIComponent(data.gameName)}`;
   };
 
   const handleDelete = async () => {
@@ -85,9 +106,6 @@ const GameDetailView: React.FC<GameDetailViewProps> = ({
       setIsDeleting(true);
       try {
         await onDelete(data.id);
-        // La navigazione indietro è gestita internamente dalla funzione onDelete in App.tsx se necessario
-        // o chiamiamo onBack qui se onDelete non lo fa. 
-        // In App.tsx handleTableDelete chiama setView('home')
       } catch (e) {
         console.error("Errore durante l'eliminazione:", e);
         setIsDeleting(false);
@@ -96,7 +114,16 @@ const GameDetailView: React.FC<GameDetailViewProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-[60] bg-slate-950 overflow-y-auto animate-in fade-in slide-in-from-bottom-8 duration-500">
+    <div ref={containerRef} className="fixed inset-0 z-[60] bg-slate-950 overflow-y-auto animate-in fade-in slide-in-from-bottom-8 duration-500">
+      {/* Torna su Flottante Interno */}
+      <button 
+        onClick={scrollToTop}
+        className={`fixed bottom-24 right-6 z-[80] w-12 h-12 rounded-2xl glass border border-indigo-500/30 text-indigo-400 flex items-center justify-center shadow-2xl transition-all duration-500 hover:bg-indigo-600 hover:text-white hover:border-indigo-400 active:scale-90 ${showScrollTop ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8 pointer-events-none'}`}
+        title="Torna a inizio scheda"
+      >
+        <i className="fa-solid fa-chevron-up text-lg"></i>
+      </button>
+
       {/* Hero Section */}
       <div className="relative min-h-[35vh] md:min-h-[45vh] w-full flex flex-col">
         <div className="absolute inset-0">

@@ -1,5 +1,3 @@
-
-// Add missing React and hooks imports to fix compilation errors
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Player, GameTable, GameProposal, CollectedGame, GameType } from '../types';
 import GameCard from './GameCard';
@@ -25,6 +23,7 @@ interface PublicProfileProps {
   onCreateTable: () => void;
   onCreateProposal: () => void;
   onUpdateCollection: (userId: string, newCollection: CollectedGame[]) => void;
+  onUpdateUser?: (user: Player) => void;
   onViewTableDetail: (table: GameTable) => void;
   onViewProposalDetail: (proposal: GameProposal) => void;
 }
@@ -51,6 +50,7 @@ const PublicProfile: React.FC<PublicProfileProps> = ({
   onCreateTable,
   onCreateProposal,
   onUpdateCollection,
+  onUpdateUser,
   onViewTableDetail,
   onViewProposalDetail
 }) => {
@@ -58,27 +58,19 @@ const PublicProfile: React.FC<PublicProfileProps> = ({
   const [collection, setCollection] = useState<CollectedGame[]>(user.collection || []);
   const [searchGameName, setSearchGameName] = useState('');
   
-  // Gestione modalità inserimento
   const [addMode, setAddMode] = useState<AddMode>('single');
   const [bggUsername, setBggUsername] = useState('');
   const [isImporting, setIsImporting] = useState(false);
   const [importStatus, setImportStatus] = useState<{msg: string, type: 'success' | 'error' | 'none'}>({msg: '', type: 'none'});
   
-  // Stato per il gioco da eliminare (per il popup di conferma)
   const [gameToDelete, setGameToDelete] = useState<CollectedGame | null>(null);
-  
-  // Stato per il gioco selezionato che attende conferma
   const [selectedPendingGame, setSelectedPendingGame] = useState<{name: string, geekId?: string, imageUrl?: string, type?: GameType} | null>(null);
   const [isAddingToCollection, setIsAddingToCollection] = useState(false);
   
-  // Ricerca testuale interna alla collezione (istantanea)
   const [collectionQuery, setCollectionQuery] = useState('');
-  
-  // Ordinamento (istantaneo)
   const [sortMode, setSortMode] = useState<CollectionSortMode>('alpha');
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
   
-  // Stati temporanei dei Filtri Avanzati
   const [showFilters, setShowFilters] = useState(false);
   const [filterMinPlayers, setFilterMinPlayers] = useState<number | ''>('');
   const [filterMaxPlayers, setFilterMaxPlayers] = useState<number | ''>('');
@@ -88,10 +80,8 @@ const PublicProfile: React.FC<PublicProfileProps> = ({
   const [filterMinYear, setFilterMinYear] = useState<number | ''>('');
   const [filterMaxYear, setFilterMaxYear] = useState<number | ''>('');
   
-  // Filtro tipologia (GDR / BG)
   const [selectedTypes, setSelectedTypes] = useState<GameType[]>([GameType.BOARD_GAME, GameType.RPG]);
 
-  // Snapshot dei filtri applicati
   const [appliedFilters, setAppliedFilters] = useState({
     minPlayers: '' as number | '',
     maxPlayers: '' as number | '',
@@ -104,6 +94,8 @@ const PublicProfile: React.FC<PublicProfileProps> = ({
 
   const collectionRef = useRef<HTMLElement>(null);
   const activityRef = useRef<HTMLElement>(null);
+  const userDataRef = useRef<HTMLElement>(null);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
 
   const levelInfo = useMemo(() => {
     if (userScore <= 50) return { level: 1, next: 50, label: 'Novizio', progress: (userScore / 50) * 100 };
@@ -116,6 +108,18 @@ const PublicProfile: React.FC<PublicProfileProps> = ({
   useEffect(() => {
     setCollection(user.collection || []);
   }, [user.collection]);
+
+  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file && onUpdateUser) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        onUpdateUser({ ...user, avatar: base64String });
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   const handleApplyFilters = () => {
     setAppliedFilters({
@@ -342,8 +346,8 @@ const PublicProfile: React.FC<PublicProfileProps> = ({
         ? `https://rpggeek.com/rpg/${game.geekId}` 
         : `https://boardgamegeek.com/boardgame/${game.geekId}`;
     } else {
-      const searchSource = game.type === GameType.RPG ? "rpggeek.com" : "boardgamegeek.com";
-      return `https://www.google.com/search?q=site:${searchSource}+${encodeURIComponent(game.name)}`;
+      const domain = game.type === GameType.RPG ? 'rpggeek.com' : 'boardgamegeek.com';
+      return `https://${domain}/results?searchname=${encodeURIComponent(game.name)}`;
     }
   };
 
@@ -367,9 +371,7 @@ const PublicProfile: React.FC<PublicProfileProps> = ({
   );
 
   return (
-    <div className="space-y-12 animate-in fade-in slide-in-from-right-4 duration-500 pb-20">
-      
-      {/* POPUP DI CONFERMA ELIMINAZIONE PERSONALIZZATO */}
+    <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500 pb-20">
       {gameToDelete && (
         <div className="fixed inset-0 z-[300] flex items-center justify-center px-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-300">
           <div className="glass w-full max-w-sm rounded-[2rem] p-8 border border-red-500/30 shadow-2xl shadow-red-500/10 animate-in zoom-in-95 duration-300">
@@ -403,8 +405,35 @@ const PublicProfile: React.FC<PublicProfileProps> = ({
         
         <div className="flex flex-col md:flex-row items-center md:items-start gap-8 relative z-10">
           <div className="flex flex-col items-center gap-4 shrink-0">
-            <div className="relative">
-              <img src={user.avatar} alt={user.name} className="w-24 h-24 md:w-32 md:h-32 rounded-[2rem] border-4 border-slate-800 shadow-2xl object-cover" />
+            <div 
+              className={`relative ${isOwnProfile ? 'cursor-pointer group' : ''}`}
+              onClick={() => isOwnProfile && avatarInputRef.current?.click()}
+              title={isOwnProfile ? 'Cambia immagine profilo' : ''}
+            >
+              <img 
+                src={user.avatar} 
+                alt={user.name} 
+                className={`w-24 h-24 md:w-32 md:h-32 rounded-[2rem] border-4 border-slate-800 shadow-2xl object-cover transition-all ${isOwnProfile ? 'group-hover:brightness-75 group-hover:scale-[1.02]' : ''}`} 
+              />
+              
+              {isOwnProfile && (
+                <>
+                  <div className="absolute inset-0 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-all">
+                    <div className="w-10 h-10 rounded-full bg-indigo-600/80 flex items-center justify-center text-white shadow-xl mb-1">
+                      <i className="fa-solid fa-camera text-sm"></i>
+                    </div>
+                    <span className="text-[7px] font-black text-white uppercase tracking-tighter bg-indigo-600 px-1.5 py-0.5 rounded shadow">Modifica</span>
+                  </div>
+                  <input 
+                    type="file" 
+                    ref={avatarInputRef} 
+                    className="hidden" 
+                    accept="image/*" 
+                    onChange={handleAvatarChange} 
+                  />
+                </>
+              )}
+
               <div className={`absolute -bottom-2 -right-2 px-3 py-1 rounded-xl border-2 text-[10px] font-black uppercase tracking-widest ${userRank === 1 ? 'bg-amber-500 text-slate-950 border-amber-300' : 'bg-slate-800 text-slate-300 border-slate-700'}`}>
                  #{userRank || '?'}
               </div>
@@ -414,7 +443,7 @@ const PublicProfile: React.FC<PublicProfileProps> = ({
               <ActivityCounter icon="fa-crown" color="amber" count={hostedTables.length} label="Host" title="Organizzati" />
               <ActivityCounter icon="fa-people-group" color="emerald" count={joinedAsPlayerTables.length} label="Play" title="Partecipati" />
               <ActivityCounter icon="fa-lightbulb" color="amber" count={userProposals.length} label="Idea" title="Proposte" />
-              <ActivityCounter icon="fa-star" color="indigo" count={joinedProposals.length} label="Star" title="Interessi" />
+              <ActivityCounter icon="fa-star" color="indigo" count={joinedProposals.length} label="Star" title="Mi interessa" />
             </div>
           </div>
           
@@ -437,22 +466,22 @@ const PublicProfile: React.FC<PublicProfileProps> = ({
             <div className="flex flex-wrap gap-3 justify-center md:justify-start">
               {isOwnProfile && (
                 <>
-                  <button onClick={onCreateTable} className="px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest bg-indigo-600 hover:bg-indigo-500 text-white transition-all shadow-xl shadow-indigo-600/20 flex items-center gap-2 group">
+                  <button onClick={onCreateTable} className="min-w-[160px] px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest bg-indigo-600 hover:bg-indigo-500 text-white transition-all shadow-xl shadow-indigo-600/20 flex items-center justify-center gap-2 group">
                     <i className="fa-solid fa-plus-circle group-hover:rotate-90 transition-transform"></i> Nuovo Tavolo
                   </button>
-                  <button onClick={onCreateProposal} className="px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest bg-amber-600 hover:bg-amber-500 text-white transition-all shadow-xl shadow-amber-600/20 flex items-center gap-2">
+                  <button onClick={onCreateProposal} className="min-w-[160px] px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest bg-amber-600 hover:bg-amber-500 text-white transition-all shadow-xl shadow-amber-600/20 flex items-center justify-center gap-2">
                     <i className="fa-solid fa-wand-magic-sparkles"></i> Proponi
                   </button>
                 </>
               )}
-              <button onClick={() => activityRef.current?.scrollIntoView({ behavior: 'smooth' })} className="px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest bg-slate-800 hover:bg-slate-700 text-white transition-all border border-slate-700 flex items-center gap-2">
+              <button onClick={() => activityRef.current?.scrollIntoView({ behavior: 'smooth' })} className="min-w-[160px] px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest bg-slate-800 hover:bg-slate-700 text-white transition-all border border-slate-700 flex items-center justify-center gap-2">
                 <i className="fa-solid fa-bolt-lightning text-amber-400"></i> Attività
               </button>
-              <button onClick={() => collectionRef.current?.scrollIntoView({ behavior: 'smooth' })} className="px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest bg-slate-900/50 hover:bg-slate-800 text-slate-400 hover:text-white transition-all border border-slate-800 flex items-center gap-2">
+              <button onClick={() => collectionRef.current?.scrollIntoView({ behavior: 'smooth' })} className="min-w-[160px] px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest bg-slate-800 hover:bg-slate-700 text-white transition-all border border-slate-700 flex items-center justify-center gap-2">
                 <i className="fa-solid fa-box-archive text-emerald-400"></i> Collezione ({collection.length})
               </button>
-              <button onClick={onBack} className="px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest bg-slate-900/50 hover:bg-slate-800 text-slate-400 hover:text-white transition-all border border-slate-800 flex items-center gap-2">
-                <i className="fa-solid fa-arrow-left-long"></i> Torna
+              <button onClick={() => userDataRef.current?.scrollIntoView({ behavior: 'smooth' })} className="min-w-[160px] px-5 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest bg-slate-800 hover:bg-slate-700 text-white transition-all border border-slate-700 flex items-center justify-center gap-2">
+                <i className="fa-solid fa-user-gear text-indigo-400"></i> I Miei Dati
               </button>
             </div>
           </div>
@@ -460,11 +489,7 @@ const PublicProfile: React.FC<PublicProfileProps> = ({
       </div>
 
       <div className="max-w-7xl mx-auto space-y-16">
-        
-        {/* SEZIONE: ATTIVITÀ UTENTE */}
         <section ref={activityRef} className="space-y-12">
-          
-          {/* TAVOLI ORGANIZZATI */}
           <div className="animate-in fade-in duration-500">
             <SectionHeader icon="fa-crown" title="Tavoli Organizzati" count={hostedTables.length} color="amber" />
             {hostedTables.length > 0 ? (
@@ -482,7 +507,6 @@ const PublicProfile: React.FC<PublicProfileProps> = ({
             )}
           </div>
 
-          {/* PARTECIPAZIONI */}
           <div className="animate-in fade-in duration-500" style={{ animationDelay: '100ms' }}>
             <SectionHeader icon="fa-people-group" title="Partecipazioni" count={joinedAsPlayerTables.length} color="emerald" />
             {joinedAsPlayerTables.length > 0 ? (
@@ -500,9 +524,8 @@ const PublicProfile: React.FC<PublicProfileProps> = ({
             )}
           </div>
 
-          {/* PROPOSTE LANCIATE */}
           <div className="animate-in fade-in duration-500" style={{ animationDelay: '200ms' }}>
-            <SectionHeader icon="fa-lightbulb" title="Proposte Lanciate" count={userProposals.length} color="amber" />
+            <SectionHeader icon="fa-lightbulb" title="Proposte" count={userProposals.length} color="amber" />
             {userProposals.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {userProposals.map((prop, idx) => (
@@ -518,9 +541,8 @@ const PublicProfile: React.FC<PublicProfileProps> = ({
             )}
           </div>
 
-          {/* INTERESSI ESPRESSI */}
           <div className="animate-in fade-in duration-500" style={{ animationDelay: '300ms' }}>
-            <SectionHeader icon="fa-star" title="Interessi Espressi" count={joinedProposals.length} color="indigo" />
+            <SectionHeader icon="fa-star" title="Mi interessa" count={joinedProposals.length} color="indigo" />
             {joinedProposals.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {joinedProposals.map((prop, idx) => (
@@ -532,12 +554,95 @@ const PublicProfile: React.FC<PublicProfileProps> = ({
                 ))}
               </div>
             ) : (
-              <p className="text-center py-10 glass rounded-3xl border border-slate-800 text-slate-500 text-xs italic">Ancora nessun interesse espresso.</p>
+              <p className="text-center py-10 glass rounded-3xl border border-slate-800 text-slate-500 text-xs italic">Anora nessun interesse espresso.</p>
             )}
           </div>
         </section>
 
-        {/* SEZIONE: COLLEZIONE GIOCHI */}
+        <section ref={userDataRef} className="space-y-8 pt-12 border-t border-slate-800/50 animate-in fade-in duration-700">
+           <div className="flex flex-col gap-6 px-2">
+            <h3 className="text-sm font-black uppercase tracking-[0.2em] text-indigo-400 flex items-center gap-4">
+              <div className="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center border border-indigo-500/20"><i className="fa-solid fa-user-gear"></i></div>
+              I Miei Dati & Account
+            </h3>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="glass p-6 rounded-3xl border border-slate-800 space-y-6">
+                <div>
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1 block">Nome Visualizzato</label>
+                  <div className="bg-slate-950/40 border border-slate-800 rounded-xl px-4 py-3 text-sm font-bold text-white">
+                    {user.name}
+                  </div>
+                </div>
+                <div>
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1 block">Username Tecnico</label>
+                  <div className="bg-slate-950/40 border border-slate-800 rounded-xl px-4 py-3 text-sm font-bold text-slate-400 italic">
+                    @{user.username || user.name.toLowerCase()}
+                  </div>
+                </div>
+                <div>
+                  <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1 block">Ruolo Community</label>
+                  <div className="flex items-center gap-2">
+                    <span className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider ${user.isAdmin ? 'bg-amber-500 text-slate-950' : 'bg-slate-800 text-slate-400'}`}>
+                      {user.isAdmin ? 'Amministratore' : 'Membro Society'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="glass p-6 rounded-3xl border border-slate-800 lg:col-span-2 space-y-6 relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 -mr-16 -mt-16 rounded-full blur-3xl"></div>
+                
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                   <div>
+                      <h4 className="text-lg font-bold text-white">Progressione Karma</h4>
+                      <p className="text-xs text-slate-500">Analisi dettagliata della tua attività nella Society.</p>
+                   </div>
+                   <div className="bg-indigo-600/20 border border-indigo-500/30 px-4 py-2 rounded-2xl flex items-center gap-3">
+                      <i className="fa-solid fa-award text-indigo-400 text-xl"></i>
+                      <div className="flex flex-col">
+                        <span className="text-[10px] font-black text-indigo-300 uppercase tracking-tighter leading-none">Grado Attuale</span>
+                        <span className="text-sm font-black text-white uppercase tracking-widest">{levelInfo.label}</span>
+                      </div>
+                   </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="bg-slate-950/30 border border-slate-800/50 p-4 rounded-2xl">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-[10px] font-black text-slate-500 uppercase">Leadership (Organizzatore)</span>
+                      <span className="text-xs font-bold text-amber-400">{hostedTables.length * 10} XP</span>
+                    </div>
+                    <div className="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
+                      <div className="h-full bg-amber-500" style={{ width: `${Math.min((hostedTables.length / 10) * 100, 100)}%` }}></div>
+                    </div>
+                    <p className="text-[8px] text-slate-600 mt-2">Punteggio ottenuto ospitando nuovi tavoli.</p>
+                  </div>
+                  <div className="bg-slate-950/30 border border-slate-800/50 p-4 rounded-2xl">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className="text-[10px] font-black text-slate-500 uppercase">Socialità (Giocatore)</span>
+                      <span className="text-xs font-bold text-emerald-400">{joinedAsPlayerTables.length * 5} XP</span>
+                    </div>
+                    <div className="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
+                      <div className="h-full bg-emerald-500" style={{ width: `${Math.min((joinedAsPlayerTables.length / 20) * 100, 100)}%` }}></div>
+                    </div>
+                    <p className="text-[8px] text-slate-600 mt-2">Punteggio ottenuto partecipando a sessioni.</p>
+                  </div>
+                </div>
+
+                <div className="pt-4 border-t border-slate-800 flex justify-between items-center">
+                   <p className="text-[9px] text-slate-500 uppercase font-bold">Posizione Globale: <span className="text-white">#{userRank || '?'}</span></p>
+                   {isOwnProfile && (
+                     <button className="text-[9px] font-black text-indigo-400 hover:text-white uppercase tracking-widest transition-colors flex items-center gap-2">
+                       <i className="fa-solid fa-pen-to-square"></i> Modifica Profilo (Beta)
+                     </button>
+                   )}
+                </div>
+              </div>
+            </div>
+           </div>
+        </section>
+
         <section ref={collectionRef} className="space-y-8 pt-12 border-t border-slate-800/50">
           <div className="flex flex-col gap-6 px-2">
             <h3 className="text-sm font-black uppercase tracking-[0.2em] text-emerald-400 flex items-center gap-4">
@@ -558,18 +663,18 @@ const PublicProfile: React.FC<PublicProfileProps> = ({
                   />
                 </div>
 
-                <div className="flex bg-slate-900/50 p-1 rounded-xl border border-slate-800">
-                  <button 
-                    onClick={() => toggleType(GameType.RPG)} 
-                    className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${selectedTypes.includes(GameType.RPG) ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
-                  >
-                    <i className="fa-solid fa-dice-d20"></i> GDR
-                  </button>
+                <div className="flex bg-slate-900/50 p-0.5 rounded-xl border border-slate-800 w-36 shrink-0">
                   <button 
                     onClick={() => toggleType(GameType.BOARD_GAME)} 
-                    className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${selectedTypes.includes(GameType.BOARD_GAME) ? 'bg-emerald-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
+                    className={`flex-1 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 ${selectedTypes.includes(GameType.BOARD_GAME) ? 'bg-emerald-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
                   >
                     <i className="fa-solid fa-dice-six"></i> BG
+                  </button>
+                  <button 
+                    onClick={() => toggleType(GameType.RPG)} 
+                    className={`flex-1 py-1 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 ${selectedTypes.includes(GameType.RPG) ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
+                  >
+                    <i className="fa-solid fa-dice-d20"></i> GDR
                   </button>
                 </div>
               </div>
@@ -578,7 +683,7 @@ const PublicProfile: React.FC<PublicProfileProps> = ({
                 <div className="flex flex-wrap bg-slate-900/50 p-1 rounded-xl border border-slate-800 gap-1">
                   <button onClick={() => { if (sortMode === 'alpha') setSortDir(prev => prev === 'asc' ? 'desc' : 'asc'); else { setSortMode('alpha'); setSortDir('asc'); } }} className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${sortMode === 'alpha' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}><i className={`fa-solid ${sortDir === 'asc' && sortMode === 'alpha' ? 'fa-sort-alpha-down' : 'fa-sort-alpha-up'}`}></i> AZ</button>
                   <button onClick={() => { if (sortMode === 'rank') setSortDir(prev => prev === 'asc' ? 'desc' : 'asc'); else { setSortMode('rank'); setSortDir('asc'); } }} className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${sortMode === 'rank' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`} title="BGG Rank Overall"><i className={`fa-solid ${sortDir === 'asc' && sortMode === 'rank' ? 'fa-arrow-down-1-9' : 'fa-arrow-up-9-1'}`}></i> Rank</button>
-                  <button onClick={() => { if (sortMode === 'difficulty') setSortDir(prev => prev === 'asc' ? 'desc' : 'asc'); else { setSortMode('difficulty'); setSortDir('asc'); } }} className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${sortMode === 'difficulty' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`} title="Peso BGG"><i className="fa-solid fa-brain"></i> Peso</button>
+                  <button onClick={() => { if (sortMode === 'difficulty') setSortDir(prev => prev === 'asc' ? 'desc' : 'asc'); else { setSortMode('difficulty'); setSortDir('asc'); } }} className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${sortMode === 'difficulty' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`} title="Peso (Difficoltà)"><i className="fa-solid fa-brain"></i> Peso</button>
                   <button onClick={() => { if (sortMode === 'duration') setSortDir(prev => prev === 'asc' ? 'desc' : 'asc'); else { setSortMode('duration'); setSortDir('asc'); } }} className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all flex items-center gap-1.5 ${sortMode === 'duration' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`} title="Durata"><i className="fa-solid fa-clock"></i> Durata</button>
                 </div>
 
@@ -591,7 +696,6 @@ const PublicProfile: React.FC<PublicProfileProps> = ({
 
           {showFilters && (
             <div className="glass p-6 md:p-8 rounded-3xl border border-slate-800 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 animate-in slide-in-from-top-4 duration-300">
-              {/* Giocatori Range */}
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Giocatori (Range)</label>
                 <div className="flex items-center gap-2">
@@ -600,7 +704,6 @@ const PublicProfile: React.FC<PublicProfileProps> = ({
                 </div>
               </div>
               
-              {/* Difficoltà Dropdown */}
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Difficoltà (Peso)</label>
                 <select 
@@ -617,7 +720,6 @@ const PublicProfile: React.FC<PublicProfileProps> = ({
                 </select>
               </div>
 
-              {/* Durata Range */}
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Durata (Minuti)</label>
                 <div className="flex items-center gap-2">
@@ -626,7 +728,6 @@ const PublicProfile: React.FC<PublicProfileProps> = ({
                 </div>
               </div>
 
-              {/* Anno Range */}
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1">Anno Pubblicazione</label>
                 <div className="flex items-center gap-2">
@@ -635,7 +736,6 @@ const PublicProfile: React.FC<PublicProfileProps> = ({
                 </div>
               </div>
 
-              {/* Azioni Filtri */}
               <div className="lg:col-span-4 flex items-center justify-between pt-4 border-t border-slate-800/50 mt-2">
                 <button onClick={resetFilters} className="text-[10px] font-black text-slate-500 hover:text-white uppercase tracking-widest transition-colors flex items-center gap-2">
                    <i className="fa-solid fa-trash-can"></i> Resetta
@@ -698,11 +798,6 @@ const PublicProfile: React.FC<PublicProfileProps> = ({
                         </button>
                       )}
                     </div>
-                    {selectedPendingGame && (
-                      <p className="text-[9px] font-black text-emerald-500 uppercase tracking-widest animate-pulse px-1">
-                        Hai selezionato: <strong>{selectedPendingGame.name}</strong>. Clicca su "Aggiungi" per confermare l'inserimento.
-                      </p>
-                    )}
                   </div>
                 ) : (
                   <div className="space-y-4">
@@ -738,12 +833,6 @@ const PublicProfile: React.FC<PublicProfileProps> = ({
                         {importStatus.msg}
                       </p>
                     )}
-                    <div className="bg-indigo-500/5 p-3 rounded-xl border border-indigo-500/20">
-                      <p className="text-[9px] text-indigo-300 font-bold leading-relaxed italic">
-                        <i className="fa-solid fa-circle-info mr-1.5"></i>
-                        Inserisci lo <strong>Username univoco</strong> (handle) che compare nell'URL del tuo profilo BGG (es: se l'URL è boardgamegeek.com/user/<strong>MarioRossi88</strong>, inserisci <strong>MarioRossi88</strong>). Assicurati che il tuo profilo sia pubblico.
-                      </p>
-                    </div>
                   </div>
                 )}
               </div>
@@ -768,11 +857,6 @@ const PublicProfile: React.FC<PublicProfileProps> = ({
                           {game.yearpublished}
                         </span>
                       )}
-                      {game.rank && game.rank < 999999 && (
-                        <span className="px-2 py-0.5 rounded-lg text-[8px] font-black text-amber-500 bg-amber-500/10 border border-amber-500/20 uppercase tracking-widest">
-                          #{game.rank}
-                        </span>
-                      )}
                     </div>
 
                     {isOwnProfile && (
@@ -791,10 +875,7 @@ const PublicProfile: React.FC<PublicProfileProps> = ({
                     <div className="flex-1 min-w-0">
                        <div className="flex items-start justify-between gap-2">
                          <div className="flex items-center gap-2.5">
-                            <div 
-                              className="w-10 h-10 rounded-lg overflow-hidden shrink-0 border border-slate-700/50 hover:border-indigo-500 transition-all shadow-md group/bgg"
-                              title="Vedi su Geek"
-                            >
+                            <div className="w-10 h-10 rounded-lg overflow-hidden shrink-0 border border-slate-700/50 hover:border-indigo-500 transition-all shadow-md group/bgg">
                                <img src={FALLBACK_ICON_URL} className="w-full h-full object-cover transition-transform group-hover/bgg:scale-110" alt="BGG" />
                             </div>
                             <h3 className="text-xl font-bold text-white leading-tight uppercase tracking-tight group-hover:text-indigo-300 transition-colors">
@@ -816,7 +897,7 @@ const PublicProfile: React.FC<PublicProfileProps> = ({
                         </div>
                       </div>
                       <div className="flex flex-col">
-                        <span className="text-[7px] font-black text-slate-600 uppercase tracking-widest mb-0.5">Weight BGG</span>
+                        <span className="text-[7px] font-black text-slate-600 uppercase tracking-widest mb-0.5">Peso</span>
                         <div className="flex items-center gap-1">
                           <i className="fa-solid fa-brain text-[8px] text-amber-500/60"></i>
                           <span className="text-[10px] font-bold text-slate-300">

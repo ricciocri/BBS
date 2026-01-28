@@ -1,4 +1,3 @@
-
 import { GameType, GameFormat, Player } from './types';
 
 export const COLORS = {
@@ -8,14 +7,14 @@ export const COLORS = {
   bg: 'slate-900',
 };
 
-// Pool di giochi con pesi (weight) esatti da BoardGameGeek - Dati aggiornati alla massima precisione BGG richiesta
+// Pool di giochi con pesi (weight) esatti da BoardGameGeek
 const SAMPLE_GAMES = [
   { name: 'Gloomhaven', type: GameType.BOARD_GAME, geekId: '174430', minPlayers: 1, maxPlayers: 4, difficulty: 3.91, duration: 120, yearpublished: '2017', rank: 3 },
   { name: 'Terraforming Mars', type: GameType.BOARD_GAME, geekId: '167791', minPlayers: 1, maxPlayers: 5, difficulty: 3.26, duration: 120, yearpublished: '2016', rank: 7 },
   { name: 'Wingspan', type: GameType.BOARD_GAME, geekId: '266191', minPlayers: 1, maxPlayers: 5, difficulty: 2.48, duration: 70, yearpublished: '2019', rank: 25 },
   { name: 'Azul', type: GameType.BOARD_GAME, geekId: '230802', minPlayers: 2, maxPlayers: 4, difficulty: 1.76, duration: 45, yearpublished: '2017', rank: 70 },
-  { name: 'Dungeons & Dragons 5e', type: GameType.RPG, geekId: '170067', minPlayers: 2, maxPlayers: 8, difficulty: 3.00, duration: 180, yearpublished: '2014', rank: 1 },
-  { name: 'Cyberpunk Red', type: GameType.RPG, geekId: '219153', minPlayers: 2, maxPlayers: 6, difficulty: 3.50, duration: 240, yearpublished: '2020', rank: 15 },
+  { name: 'Dungeons & Dragons 5e', type: GameType.RPG, geekId: '9677', minPlayers: 2, maxPlayers: 8, difficulty: 3.00, duration: 180, yearpublished: '2014', rank: 1 },
+  { name: 'Cyberpunk Red', type: GameType.RPG, geekId: '57038', minPlayers: 2, maxPlayers: 6, difficulty: 3.50, duration: 240, yearpublished: '2020', rank: 15 },
   { name: 'Call of Cthulhu', type: GameType.RPG, geekId: '101', minPlayers: 2, maxPlayers: 6, difficulty: 3.20, duration: 180, yearpublished: '1981', rank: 2 },
   { name: 'Brass: Birmingham', type: GameType.BOARD_GAME, geekId: '224517', minPlayers: 2, maxPlayers: 4, difficulty: 3.87, duration: 120, yearpublished: '2018', rank: 1 },
   { name: 'Pathfinder 2e', type: GameType.RPG, geekId: '193032', minPlayers: 2, maxPlayers: 6, difficulty: 4.20, duration: 240, yearpublished: '2019', rank: 5 },
@@ -37,7 +36,6 @@ const SAMPLE_GAMES = [
   { name: 'Delta Green', type: GameType.RPG, geekId: '226245', minPlayers: 2, maxPlayers: 6, difficulty: 3.60, duration: 240, yearpublished: '2016', rank: 8 }
 ];
 
-// Funzione helper per generare una collezione "casuale" ma fissa basata sull'ID
 const generateCollection = (userId: string): any[] => {
   let hash = 0;
   for (let i = 0; i < userId.length; i++) {
@@ -60,7 +58,7 @@ const generateCollection = (userId: string): any[] => {
         ...game,
         imageUrl: game.type === GameType.RPG 
           ? `https://picsum.photos/seed/${game.name}/400/400` 
-          : `https://cf.geekdo-images.com/itemrep/img/pic${game.geekId}.jpg` // Mock URL format
+          : `https://cf.geekdo-images.com/itemrep/img/pic${game.geekId}.jpg`
       });
     } else {
       hash++;
@@ -124,7 +122,7 @@ export const MOCK_TABLES = [
     location: 'La Gilda, Via de\' Gessi',
     imageUrl: 'https://images.unsplash.com/photo-1542653612-ad28247ad761?q=80&w=800&auto=format&fit=crop',
     createdAt: '2026-01-23T07:30:00Z',
-    geekId: '219153'
+    geekId: '57038'
   },
   {
     id: 't-today-2',
@@ -160,7 +158,7 @@ export const MOCK_TABLES = [
     location: 'Games Academy Bologna',
     imageUrl: 'https://images.unsplash.com/photo-1509248961158-e54f6934749c?q=80&w=800&auto=format&fit=crop',
     createdAt: '2026-01-21T14:45:00Z',
-    geekId: '170067'
+    geekId: '9677'
   },
   {
     id: 't-week-2',
@@ -214,7 +212,7 @@ export const MOCK_TABLES = [
     location: 'La Gilda, Via de\' Gessi',
     imageUrl: 'https://images.unsplash.com/photo-1519074063261-0b5c179758f1?q=80&w=800&auto=format&fit=crop',
     createdAt: '2026-01-10T15:30:00Z',
-    geekId: '170067'
+    geekId: '9677'
   },
   {
     id: 't-rpg-torn-2',

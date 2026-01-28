@@ -119,7 +119,7 @@ export interface AdvancedFilterState {
   locationSearch: string;
   participantSearch: string;
   showOnlyJoined: boolean;
-  showPastTables: boolean;
+  showOnlyNew: boolean;
   showOnlyMyProposals: boolean;
   formatFilter: 'all' | 'campaign' | 'single' | 'tournament';
   typeFilter: 'all' | 'rpg' | 'boardgame';

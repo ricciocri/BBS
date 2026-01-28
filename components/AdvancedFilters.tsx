@@ -149,11 +149,13 @@ const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({ filters, onChange, on
               color="indigo" 
               onClick={() => handleChange('showOnlyJoined', !filters.showOnlyJoined)} 
             />
-            {mode === 'tables' ? (
-              <ToggleSwitch label="Tavoli passati" icon="fa-clock-rotate-left" active={filters.showPastTables} color="amber" onClick={() => handleChange('showPastTables', !filters.showPastTables)} />
-            ) : (
-              <ToggleSwitch label="Mie proposte" icon="fa-lightbulb" active={filters.showOnlyMyProposals} color="amber" onClick={() => handleChange('showOnlyMyProposals', !filters.showOnlyMyProposals)} />
-            )}
+            <ToggleSwitch 
+              label="Tavoli Nuovi" 
+              icon="fa-wand-magic-sparkles" 
+              active={filters.showOnlyNew} 
+              color="amber" 
+              onClick={() => handleChange('showOnlyNew', !filters.showOnlyNew)} 
+            />
           </div>
         </div>
       </div>
