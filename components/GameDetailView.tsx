@@ -40,13 +40,16 @@ const GameDetailView: React.FC<GameDetailViewProps> = ({
   const today = '2026-01-23';
   const isInactive = isTable 
     ? table!.date < today 
-    : proposal!.interestedPlayerIds.length === 0;
+    : false;
 
   const isRPG = data.type === GameType.RPG;
   const isJoined = isTable && currentUser ? table!.currentPlayers.some(p => p.id === currentUser.id) : false;
   const isInterested = !isTable && currentUser ? proposal!.interestedPlayerIds.includes(currentUser.id) : false;
-  const isFull = isTable ? table!.currentPlayers.length >= table!.maxPlayers : proposal!.interestedPlayerIds.length >= proposal!.maxPlayersGoal;
   
+  const isFull = isTable 
+    ? table!.currentPlayers.length >= table!.maxPlayers 
+    : proposal!.interestedPlayerIds.length >= proposal!.maxPlayersGoal;
+
   const participants = isTable 
     ? table!.currentPlayers 
     : allUsers.filter(u => proposal!.interestedPlayerIds.includes(u.id));
@@ -115,7 +118,6 @@ const GameDetailView: React.FC<GameDetailViewProps> = ({
 
   return (
     <div ref={containerRef} className="fixed inset-0 z-[60] bg-slate-950 overflow-y-auto animate-in fade-in slide-in-from-bottom-8 duration-500">
-      {/* Torna su Flottante Interno */}
       <button 
         onClick={scrollToTop}
         className={`fixed bottom-24 right-6 z-[80] w-12 h-12 rounded-2xl glass border border-indigo-500/30 text-indigo-400 flex items-center justify-center shadow-2xl transition-all duration-500 hover:bg-indigo-600 hover:text-white hover:border-indigo-400 active:scale-90 ${showScrollTop ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8 pointer-events-none'}`}
@@ -124,7 +126,6 @@ const GameDetailView: React.FC<GameDetailViewProps> = ({
         <i className="fa-solid fa-chevron-up text-lg"></i>
       </button>
 
-      {/* Hero Section */}
       <div className="relative min-h-[35vh] md:min-h-[45vh] w-full flex flex-col">
         <div className="absolute inset-0">
           <img 
@@ -192,7 +193,7 @@ const GameDetailView: React.FC<GameDetailViewProps> = ({
           </h1>
           
           <div className="flex items-center flex-wrap gap-x-2 gap-y-1">
-            <span className="text-slate-500 text-[10px] md:text-xs font-black uppercase tracking-[0.2em]">GIOCO:</span>
+            <span className="text-slate-500 text-[10px] md:text-xs font-black uppercase tracking-[0.2em]">GIOCO BASE:</span>
             <div className="flex items-center gap-2">
               <span className="text-emerald-400 text-xs md:text-base font-black uppercase tracking-widest">{data.gameName}</span>
               <a href={getGameUrl()} target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-white transition-colors">
@@ -205,32 +206,13 @@ const GameDetailView: React.FC<GameDetailViewProps> = ({
 
       <div className="max-w-7xl mx-auto px-4 md:px-8 py-8 md:py-12">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 md:gap-12">
-          <div className="lg:col-span-8 space-y-10">
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
-              {[
-                { label: 'Quando', value: isTable ? new Date(table!.date).toLocaleDateString('it-IT') : new Date(proposal!.createdAt).toLocaleDateString('it-IT'), icon: 'fa-calendar', color: 'indigo' },
-                { label: 'Orario', value: isTable ? table!.time : 'TBD', icon: 'fa-clock', color: 'indigo' },
-                { label: 'Luogo', value: isTable ? table!.location.split(',')[0] : 'In attesa', icon: 'fa-location-dot', color: 'indigo' },
-                { label: 'Posti', value: `${participants.length} / ${isTable ? table!.maxPlayers : proposal!.maxPlayersGoal}`, icon: 'fa-users', color: 'indigo' }
-              ].map((meta, idx) => (
-                <div key={idx} className={`glass p-4 rounded-2xl border flex items-center gap-4 ${isInactive && isTable ? 'border-red-900/20' : 'border-slate-800'}`}>
-                  <div className={`w-10 h-10 rounded-xl bg-slate-900 flex items-center justify-center text-sm border border-slate-800 text-${meta.color}-400 shrink-0`}>
-                    <i className={`fa-solid ${meta.icon}`}></i>
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-0.5">{meta.label}</p>
-                    <p className={`text-xs font-bold truncate ${isInactive && isTable ? 'text-red-400' : 'text-white'}`}>{meta.value}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-
+          <div className="lg:col-span-8 space-y-12">
             <div className="space-y-4">
               <div className="flex items-center gap-3">
                 <i className="fa-solid fa-quote-left text-indigo-500/50"></i>
-                <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Note di Sessione</h3>
+                <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Descrizione</h3>
               </div>
-              <div className="glass p-6 md:p-8 rounded-3xl border border-slate-800 relative">
+              <div className="glass p-6 md:p-8 rounded-3xl border border-slate-800 relative shadow-inner">
                 <p className="text-slate-300 text-sm md:text-base leading-relaxed italic">
                   {data.description}
                 </p>
@@ -240,11 +222,11 @@ const GameDetailView: React.FC<GameDetailViewProps> = ({
             {!isTable && (
               <div 
                 onClick={() => onSelectMember(proposal!.proposer.id)}
-                className="glass p-4 rounded-2xl border border-amber-500/10 flex items-center gap-4 cursor-pointer hover:border-amber-500/30 transition-all"
+                className="glass p-4 rounded-2xl border border-amber-500/10 flex items-center gap-4 cursor-pointer hover:border-amber-500/30 transition-all shadow-lg"
               >
                 <img src={proposal!.proposer.avatar} className="w-12 h-12 rounded-xl object-cover border border-amber-500/30" alt={proposal!.proposer.name} />
                 <div className="min-w-0">
-                  <p className="text-[8px] font-black text-amber-500 uppercase tracking-widest">Organizzatore Proposta</p>
+                  <p className="text-[8px] font-black text-amber-500 uppercase tracking-widest">Creatore della Proposta</p>
                   <p className="text-sm font-bold text-white truncate">{proposal!.proposer.name}</p>
                 </div>
                 <i className="fa-solid fa-chevron-right text-slate-700 ml-auto"></i>
@@ -253,59 +235,38 @@ const GameDetailView: React.FC<GameDetailViewProps> = ({
           </div>
 
           <div className="lg:col-span-4 space-y-6">
-            <div className={`glass p-6 rounded-3xl border ${isInactive && isTable ? 'border-red-500/20 bg-red-500/5' : isJoined ? 'border-red-500/20 bg-red-500/5' : 'border-indigo-500/20 bg-indigo-500/5'} space-y-6`}>
-              <div className="text-center">
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-2">Stato Partecipazione</p>
-                <div className={`text-2xl font-black ${isInactive && isTable ? 'text-red-400' : 'text-white'}`}>
-                  {participants.length} / {isTable ? table!.maxPlayers : proposal!.maxPlayersGoal}
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                {isTable ? (
-                  <button 
-                    disabled={isInactive || (!isJoined && isFull)}
-                    onClick={() => onPrimaryAction(table!.id)}
-                    className={`w-full py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-3 ${
-                      isInactive ? 'bg-slate-800 text-slate-600 cursor-not-allowed' :
-                      isJoined ? 'bg-red-600 text-white shadow-lg shadow-red-600/20' :
-                      isFull ? 'bg-slate-800 text-slate-500' : 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20'
-                    }`}
-                  >
-                    <i className={`fa-solid ${isInactive ? 'fa-lock' : isJoined ? 'fa-door-open' : 'fa-plus'}`}></i>
-                    {isInactive ? 'Sessione Conclusa' : isJoined ? 'Lascia il Tavolo' : isFull ? 'Posti Esauriti' : 'Partecipa'}
-                  </button>
-                ) : (
-                  <div className="flex flex-col gap-3">
-                    <button 
-                      onClick={() => onPrimaryAction(proposal!.id)}
-                      className={`w-full py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-3 ${
-                        isInterested ? 'bg-amber-500 text-slate-950' : 'bg-slate-800 text-slate-300'
-                      }`}
-                    >
-                      <i className={`fa-${isInterested ? 'solid' : 'regular'} fa-star`}></i>
-                      {isInterested ? 'Ti Interessa' : 'Mi Interessa'}
-                    </button>
-                    <button 
-                      onClick={() => onSecondaryAction && onSecondaryAction(proposal!.id)}
-                      className="w-full py-4 rounded-2xl font-black text-xs uppercase tracking-widest bg-indigo-600 text-white transition-all shadow-lg"
-                    >
-                      Conferma e Apri
-                    </button>
+            <div className={`glass p-6 rounded-3xl border ${isTable ? (isInactive ? 'border-red-500/20 bg-red-500/5' : isJoined ? 'border-red-500/20 bg-red-500/5' : 'border-indigo-500/20 bg-indigo-500/5') : (isInterested ? 'border-amber-500/20 bg-amber-500/5' : 'border-slate-800')} space-y-6 shadow-2xl`}>
+                <div className="text-center">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-2">
+                    {isTable ? 'Stato Partecipazione' : 'Stato Interesse'}
+                  </p>
+                  <div className={`text-2xl font-black ${isInactive ? 'text-red-400' : 'text-white'}`}>
+                    {participants.length} / {isTable ? table!.maxPlayers : proposal!.maxPlayersGoal}
                   </div>
-                )}
-              </div>
-            </div>
+                </div>
 
-            <div className="glass p-6 rounded-3xl border border-slate-800 space-y-4">
+                <button 
+                  disabled={isInactive || (isTable && !isJoined && isFull)}
+                  onClick={() => onPrimaryAction(data.id)}
+                  className={`w-full py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all flex items-center justify-center gap-3 ${
+                    isInactive ? 'bg-slate-800 text-slate-600 cursor-not-allowed' :
+                    (isTable ? (isJoined ? 'bg-red-600 text-white' : isFull ? 'bg-slate-800 text-slate-500' : 'bg-indigo-600 text-white') : (isInterested ? 'bg-amber-600 text-white' : 'bg-slate-800 text-slate-400'))
+                  } shadow-lg`}
+                >
+                  <i className={`fa-solid ${isInactive ? 'fa-lock' : (isTable ? (isJoined ? 'fa-door-open' : 'fa-plus') : (isInterested ? 'fa-star' : 'fa-star-half-stroke'))}`}></i>
+                  {isTable ? (isJoined ? 'Lascia il Tavolo' : isFull ? 'Posti Esauriti' : 'Partecipa') : (isInterested ? 'Rimuovi Interesse' : 'Esprimi Interesse')}
+                </button>
+              </div>
+
+            <div className="glass p-6 rounded-3xl border border-slate-800 space-y-4 shadow-xl">
               <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-widest flex justify-between">
-                <span>Giocatori</span>
+                <span>{isTable ? 'Membri del Tavolo' : 'Persone Interessate'}</span>
                 <span className="text-indigo-400">{participants.length}</span>
               </h3>
               
               <div className="grid grid-cols-1 gap-2">
                 {sortedParticipants.map((p) => {
-                  const isOrganizer = isTable && p.id === table!.hostId;
+                  const isOrganizer = (isTable && p.id === table!.hostId) || (!isTable && p.id === proposal!.proposer.id);
                   const rank = userRanks[p.id];
                   return (
                     <div 
@@ -317,7 +278,7 @@ const GameDetailView: React.FC<GameDetailViewProps> = ({
                         <img src={p.avatar} className="w-8 h-8 rounded-lg object-cover border border-slate-800" alt={p.name} />
                         <div className="min-w-0">
                           <p className="text-xs font-bold text-white truncate">{p.name}</p>
-                          {isOrganizer && <p className="text-[7px] text-amber-500 font-black uppercase">Organizzatore</p>}
+                          {isOrganizer && <p className="text-[7px] text-amber-500 font-black uppercase">Autore</p>}
                         </div>
                       </div>
                       <div className="text-[9px] font-black text-slate-600 bg-slate-900 px-1.5 py-0.5 rounded-md">

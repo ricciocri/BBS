@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect } from 'react';
 import Header from './components/Header';
 import GameCard from './components/GameCard';
@@ -41,7 +42,7 @@ const App: React.FC = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'compact'>('grid');
   const [showScrollTop, setShowScrollTop] = useState(false);
   
-  const [currentUser, setCurrentUser] = useState<Player | null>(MOCK_USERS.find(u => u.id === 'admin-mauro') || null);
+  const [currentUser, setCurrentUser] = useState<Player | null>(null);
 
   const [view, setView] = useState<View>('home');
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
@@ -179,10 +180,24 @@ const App: React.FC = () => {
     const prop = proposals.find(p => p.id === id);
     if (prop) {
       const isAlreadyInterested = prop.interestedPlayerIds.includes(currentUser.id);
-      const updatedIds = isAlreadyInterested 
-        ? prop.interestedPlayerIds.filter(pid => pid !== currentUser.id) 
+      
+      // Update userPreferences to stay in sync with interestedPlayerIds
+      const newUserPreferences = { ...prop.userPreferences };
+      if (isAlreadyInterested) {
+        delete newUserPreferences[currentUser.id];
+      } else {
+        newUserPreferences[currentUser.id] = { gameName: prop.gameName };
+      }
+
+      const updatedInterested = isAlreadyInterested 
+        ? prop.interestedPlayerIds.filter(uid => uid !== currentUser.id)
         : [...prop.interestedPlayerIds, currentUser.id];
-      const updatedProp = { ...prop, interestedPlayerIds: updatedIds };
+      
+      const updatedProp = { 
+        ...prop, 
+        interestedPlayerIds: updatedInterested,
+        userPreferences: newUserPreferences
+      };
       await db.saveProposal(updatedProp);
       setProposals(prev => prev.map(p => p.id === id ? updatedProp : p));
     }
@@ -259,7 +274,7 @@ const App: React.FC = () => {
     setIsSyncing(false);
   };
 
-  const handleCreateProposal = async (formData: Omit<GameProposal, 'id' | 'interestedPlayerIds' | 'createdAt' | 'proposer'>) => {
+  const handleCreateProposal = async (formData: Omit<GameProposal, 'id' | 'interestedPlayerIds' | 'createdAt' | 'proposer' | 'userPreferences' | 'clusterStatus'>) => {
     if (!currentUser) return;
     setIsSyncing(true);
 
@@ -277,6 +292,8 @@ const App: React.FC = () => {
         id: Date.now().toString(),
         proposer: currentUser,
         interestedPlayerIds: [currentUser.id],
+        userPreferences: { [currentUser.id]: { gameName: formData.gameName } },
+        clusterStatus: {},
         createdAt: SIMULATED_NOW.toISOString()
       };
       await db.saveProposal(newProp);
@@ -436,22 +453,6 @@ const App: React.FC = () => {
         isSyncing={isSyncing}
       />
 
-      {isSyncing && (
-        <div className="fixed bottom-6 right-6 z-[100] flex items-center gap-2 bg-indigo-600 px-4 py-2 rounded-full shadow-2xl animate-bounce">
-          <i className="fa-solid fa-cloud-arrow-up text-white"></i>
-          <span className="text-[10px] font-black text-white uppercase tracking-widest">Sincronizzazione...</span>
-        </div>
-      )}
-
-      {/* Torna su Flottante Globale */}
-      <button 
-        onClick={scrollToTop}
-        className={`fixed bottom-24 right-6 z-[80] w-12 h-12 rounded-2xl glass border border-indigo-500/30 text-indigo-400 flex items-center justify-center shadow-2xl transition-all duration-500 hover:bg-indigo-600 hover:text-white hover:border-indigo-400 active:scale-90 ${showScrollTop && view !== 'table-detail' && view !== 'proposal-detail' ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8 pointer-events-none'}`}
-        title="Torna a inizio pagina"
-      >
-        <i className="fa-solid fa-chevron-up text-lg"></i>
-      </button>
-
       <main className="max-w-7xl mx-auto px-4 md:px-6 pb-20 pt-8">
         {view === 'home' && (
           <div className="space-y-6 animate-in fade-in duration-500">
@@ -570,11 +571,6 @@ const App: React.FC = () => {
           <GameDetailView 
             type="proposal" data={proposals.find(p => p.id === selectedProposalId)!} currentUser={currentUser} userRanks={userRanks} allUsers={allUsers}
             onBack={() => setView('proposals')} onPrimaryAction={handleToggleInterest}
-            onSecondaryAction={(id) => { 
-              if (!currentUser) { setIsAuthModalOpen(true); return; }
-              const p = proposals.find(pr => pr.id === id); 
-              if(p) { setPrefilledPlayers(allUsers.filter(u => p.interestedPlayerIds.includes(u.id))); setEditingTable(p); setView('create'); }
-            }}
             onEdit={(p) => { setEditingProposal(p); setView('edit-proposal'); }}
             onSelectMember={(id) => { setSelectedUserId(id); setView('profile'); }}
             onDelete={handleDeleteProposal}

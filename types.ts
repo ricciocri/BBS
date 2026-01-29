@@ -14,6 +14,17 @@ export type RankingPeriod = 'all' | 'daily' | 'weekly' | 'monthly' | 'yearly';
 export type SortType = 'session' | 'creation';
 export type GroupType = 'none' | 'day' | 'week' | 'month' | 'year' | 'game';
 
+/**
+ * UserPreference represents specific planning choices made by a user for a proposal.
+ */
+export interface UserPreference {
+  gameName?: string;
+  date?: string;
+  time?: string;
+  location?: string;
+  maxPlayers?: number;
+}
+
 export interface CollectedGame {
   id: string;
   name: string;
@@ -100,6 +111,15 @@ export interface GameProposal {
   maxPlayersGoal: number;
   createdAt: string;
   geekId?: string;
+  // userPreferences and clusterStatus support the sandbox collaborative planning feature
+  userPreferences: Record<string, UserPreference>;
+  clusterStatus: Record<string, 'draft' | 'proposing' | 'opened'>;
+  isGameFixed?: boolean;
+  // Logistical draft fields
+  date?: string;
+  time?: string;
+  location?: string;
+  system?: string;
 }
 
 export interface AppNotification {

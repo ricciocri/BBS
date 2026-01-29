@@ -1,4 +1,5 @@
-import { GameType, GameFormat, Player } from './types';
+
+import { GameType, GameFormat, Player, GameProposal } from './types';
 
 export const COLORS = {
   primary: 'indigo-500',
@@ -288,7 +289,31 @@ export const MOCK_TABLES = [
   }
 ];
 
-export const MOCK_PROPOSALS = [
+export const MOCK_PROPOSALS: GameProposal[] = [
+  {
+    id: 'p-mauro-heavy',
+    title: 'Mauro organizza: Brass Birmingham (Esperti)',
+    gameName: 'Brass: Birmingham',
+    type: GameType.BOARD_GAME,
+    format: GameFormat.SINGLE_PLAY,
+    description: 'Cerco strateghi per una partita ad alta tensione. Richiesta conoscenza base del regolamento o voglia di imparare un gioco tosto!',
+    imageUrl: 'https://cf.geekdo-images.com/itemrep/img/pic224517.jpg',
+    proposer: MOCK_USERS[1],
+    interestedPlayerIds: ['admin-mauro', 'u1', 'u2', 'u3', 'u4', 'u5', 'u6'],
+    maxPlayersGoal: 4,
+    createdAt: '2026-01-23T08:15:00Z',
+    geekId: '224517',
+    userPreferences: {
+      'admin-mauro': { gameName: 'Brass: Birmingham' },
+      'u1': { gameName: 'Brass: Birmingham' },
+      'u2': { gameName: 'Brass: Birmingham' },
+      'u3': { gameName: 'Brass: Birmingham' },
+      'u4': { gameName: 'Brass: Birmingham' },
+      'u5': { gameName: 'Brass: Birmingham' },
+      'u6': { gameName: 'Brass: Birmingham' },
+    },
+    clusterStatus: {}
+  },
   { 
     id: 'p-today-1', 
     title: 'Proposta: Pandemic Legacy S1', 
@@ -298,10 +323,16 @@ export const MOCK_PROPOSALS = [
     description: 'Cerco gruppo fisso per finire la stagione 1.', 
     imageUrl: 'https://images.unsplash.com/photo-1611891487122-207579d67d98?q=80&w=400', 
     proposer: MOCK_USERS[5], 
-    interestedPlayerIds: ['u1', 'u2'], 
+    interestedPlayerIds: ['u5', 'u1', 'u2'],
     maxPlayersGoal: 4, 
     createdAt: '2026-01-23T07:50:00Z',
-    geekId: '161936'
+    geekId: '161936',
+    userPreferences: {
+      'u5': { gameName: 'Pandemic Legacy: Season 1' },
+      'u1': { gameName: 'Pandemic Legacy: Season 1' },
+      'u2': { gameName: 'Pandemic Legacy: Season 1' },
+    },
+    clusterStatus: {}
   },
   {
     id: 'p-gdt-torn-1',
@@ -312,10 +343,18 @@ export const MOCK_PROPOSALS = [
     description: 'Voglia di competizione ornitologica? Torneo a gironi per eleggere il Re dei Volatili!',
     imageUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?q=80&w=400',
     proposer: MOCK_USERS[11],
-    interestedPlayerIds: ['u1', 'u2', 'u3', 'u4'],
+    interestedPlayerIds: ['u11', 'u1', 'u2', 'u3', 'u4'],
     maxPlayersGoal: 12,
     createdAt: '2026-01-18T10:00:00Z',
-    geekId: '266191'
+    geekId: '266191',
+    userPreferences: {
+      'u11': { gameName: 'Wingspan' },
+      'u1': { gameName: 'Wingspan' },
+      'u2': { gameName: 'Wingspan' },
+      'u3': { gameName: 'Wingspan' },
+      'u4': { gameName: 'Wingspan' },
+    },
+    clusterStatus: {}
   },
   {
     id: 'p-gdt-torn-2',
@@ -326,10 +365,16 @@ export const MOCK_PROPOSALS = [
     description: 'Gara di velocità. Chi sconfiggerà il boss della camera nel minor numero di round?',
     imageUrl: 'https://images.unsplash.com/photo-1611891487122-207579d67d98?q=80&w=400',
     proposer: MOCK_USERS[12],
-    interestedPlayerIds: ['u7', 'u8'],
+    interestedPlayerIds: ['u12', 'u7', 'u8'],
     maxPlayersGoal: 8,
     createdAt: '2026-01-07T14:45:00Z',
-    geekId: '174430'
+    geekId: '174430',
+    userPreferences: {
+      'u12': { gameName: 'Gloomhaven' },
+      'u7': { gameName: 'Gloomhaven' },
+      'u8': { gameName: 'Gloomhaven' },
+    },
+    clusterStatus: {}
   },
   {
     id: 'p-gdt-torn-3',
@@ -340,10 +385,17 @@ export const MOCK_PROPOSALS = [
     description: 'Partita secca ad alta tensione. Premi per le corporazioni più efficienti.',
     imageUrl: 'https://images.unsplash.com/photo-1614728263952-84ea256f9679?q=80&w=800&auto=format&fit=crop',
     proposer: MOCK_USERS[13],
-    interestedPlayerIds: ['u9', 'u10', 'admin-marco'],
+    interestedPlayerIds: ['u13', 'u9', 'u10', 'admin-marco'],
     maxPlayersGoal: 5,
     createdAt: '2026-01-14T20:15:00Z',
-    geekId: '167791'
+    geekId: '167791',
+    userPreferences: {
+      'u13': { gameName: 'Terraforming Mars' },
+      'u9': { gameName: 'Terraforming Mars' },
+      'u10': { gameName: 'Terraforming Mars' },
+      'admin-marco': { gameName: 'Terraforming Mars' },
+    },
+    clusterStatus: {}
   },
   {
     id: 'p-gdt-torn-4',
@@ -354,10 +406,16 @@ export const MOCK_PROPOSALS = [
     description: 'La valle è troppo piccola per tutti! Solo i migliori costruttori passeranno alla fase finale.',
     imageUrl: 'https://images.unsplash.com/photo-1635323491418-4a62e3d997f8?q=80&w=800&auto=format&fit=crop',
     proposer: MOCK_USERS[14],
-    interestedPlayerIds: ['u1', 'u5'],
+    interestedPlayerIds: ['u14', 'u1', 'u5'],
     maxPlayersGoal: 8,
     createdAt: '2026-01-09T08:30:00Z',
-    geekId: '199792'
+    geekId: '199792',
+    userPreferences: {
+      'u14': { gameName: 'Everdell' },
+      'u1': { gameName: 'Everdell' },
+      'u5': { gameName: 'Everdell' },
+    },
+    clusterStatus: {}
   },
   {
     id: 'p-gdt-torn-5',
@@ -368,9 +426,16 @@ export const MOCK_PROPOSALS = [
     description: 'Guerra asimmetrica estrema. Vince chi domina le radure di Bologna.',
     imageUrl: 'https://images.unsplash.com/photo-1635323491418-4a62e3d997f8?q=80&w=400&auto=format&fit=crop',
     proposer: MOCK_USERS[15],
-    interestedPlayerIds: ['u3', 'u4', 'u11'],
+    interestedPlayerIds: ['u15', 'u3', 'u4', 'u11'],
     maxPlayersGoal: 4,
     createdAt: '2026-01-11T12:00:00Z',
-    geekId: '237182'
+    geekId: '237182',
+    userPreferences: {
+      'u15': { gameName: 'Root' },
+      'u3': { gameName: 'Root' },
+      'u4': { gameName: 'Root' },
+      'u11': { gameName: 'Root' },
+    },
+    clusterStatus: {}
   }
 ];

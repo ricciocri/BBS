@@ -1,3 +1,4 @@
+
 import React, { useMemo } from 'react';
 import { GameTable, GameProposal, GameType, GameFormat, Player } from '../types';
 
@@ -91,10 +92,8 @@ const GameCard: React.FC<GameCardProps> = ({
           #{index}
         </span>
 
-        {/* Info Principali */}
         <div className="flex flex-col min-w-0 flex-1 py-1">
           <div className="flex items-center gap-2">
-            {/* Immagine BGG ottimizzata (Ridotta del 20%) */}
             <a 
               href={getGeekUrl()} 
               target="_blank" 
@@ -121,14 +120,12 @@ const GameCard: React.FC<GameCardProps> = ({
           </div>
         </div>
 
-        {/* Badge Formato (Solo Desktop) */}
         <div className="hidden lg:flex items-center gap-2 px-2 border-l border-white/5 h-10">
            <span className={`px-2 py-0.5 rounded-md text-[7px] font-black uppercase tracking-widest border ${formatInfo.classes}`}>
               {formatInfo.label}
            </span>
         </div>
 
-        {/* Data & Ora */}
         <div className="flex flex-col items-center justify-center px-3 md:px-4 border-l border-white/5 h-10 min-w-[65px] md:min-w-[90px] shrink-0">
            <div className="flex items-center gap-1.5">
              <i className="fa-regular fa-calendar text-indigo-400 text-[8px]"></i>
@@ -144,7 +141,6 @@ const GameCard: React.FC<GameCardProps> = ({
            )}
         </div>
 
-        {/* Posti */}
         <div className="flex flex-col items-center justify-center px-3 md:px-4 border-l border-white/5 h-10 shrink-0 min-w-[50px]">
            <span className="text-[7px] font-black text-slate-500 uppercase tracking-tighter">Posti</span>
            <span className={`text-[11px] font-black ${isFull ? 'text-amber-400' : 'text-white'}`}>
@@ -152,7 +148,6 @@ const GameCard: React.FC<GameCardProps> = ({
            </span>
         </div>
 
-        {/* Azione */}
         <div className="flex items-center gap-2 pr-1 shrink-0">
           {isTable ? (
             <button 
@@ -213,15 +208,12 @@ const GameCard: React.FC<GameCardProps> = ({
       onClick={() => onViewDetail(data)}
       className={`group relative rounded-2xl overflow-hidden border border-slate-800 flex flex-col transition-all duration-500 shadow-sm hover:border-${themeColor}-500/50 hover:shadow-2xl hover:shadow-${themeColor}-500/10 cursor-pointer h-full min-h-[220px] bg-slate-900/90 backdrop-blur-md`}
     >
-      {/* Accent Background Pattern (Subtle) */}
       <div className="absolute inset-0 z-0 opacity-10 pointer-events-none">
         <div className={`absolute top-0 right-0 w-32 h-32 bg-${themeColor}-500 blur-3xl -mr-16 -mt-16`}></div>
         <div className={`absolute bottom-0 left-0 w-32 h-32 bg-${themeColor}-500 blur-3xl -ml-16 -mb-16`}></div>
       </div>
 
-      {/* Content */}
       <div className="relative z-10 p-5 flex-1 flex flex-col gap-4">
-        {/* Top Row: Badges & Rank */}
         <div className="flex items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
             <span className="w-8 h-8 rounded-lg bg-slate-950/60 backdrop-blur-md border border-white/10 flex items-center justify-center text-[10px] font-black text-slate-400">
@@ -250,13 +242,11 @@ const GameCard: React.FC<GameCardProps> = ({
           )}
         </div>
 
-        {/* Middle Area: Title & System */}
         <div className="mt-2">
           <p className={`text-[8px] font-black uppercase tracking-[0.2em] mb-1 ${isRPG ? 'text-indigo-400' : 'text-emerald-400'}`}>
             {isRPG ? 'GDR System' : 'Board Game'}
           </p>
           <div className="flex items-center gap-3">
-             {/* Immagine BGG ottimizzata (Ridotta del 20%) */}
              <a 
               href={getGeekUrl()} 
               target="_blank" 
@@ -276,7 +266,6 @@ const GameCard: React.FC<GameCardProps> = ({
           </p>
         </div>
 
-        {/* Footer Row: Meta & Players */}
         <div className="mt-auto flex flex-wrap items-center justify-between gap-4 pt-4 border-t border-white/10">
           <div className="flex items-center gap-4">
              <div className="flex flex-col">
@@ -310,7 +299,6 @@ const GameCard: React.FC<GameCardProps> = ({
         </div>
       </div>
       
-      {/* Bottom Accent Border */}
       <div className={`absolute bottom-0 left-0 w-full h-1 bg-${themeColor}-500/30 group-hover:bg-${themeColor}-500 transition-colors`}></div>
     </div>
   );

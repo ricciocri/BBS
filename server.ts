@@ -13,6 +13,33 @@ app.use(express.json());
 // Fix: Correct initialization of GoogleGenAI as per @google/genai coding guidelines
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
 
+// Proxy per BGG Collection (evita CORS)
+app.get('/api/bgg/collection/:username', async (req, res) => {
+  const { username } = req.params;
+  const { page } = req.query;
+  try {
+    let url = `https://boardgamegeek.com/collection/user/${username}?own=1&subtype=boardgame`;
+    if (page) {
+      url += `&page=${page}`;
+    }
+    
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+      }
+    });
+
+    if (!response.ok) {
+      return res.status(response.status).json({ error: `BGG returned status ${response.status}` });
+    }
+
+    const html = await response.text();
+    res.json({ html });
+  } catch (error) {
+    res.status(500).json({ error: "Errore nel recupero della collezione BGG" });
+  }
+});
+
 // Proxy per Gemini (Sicurezza: la chiave API resta sul server)
 app.post('/api/ai/describe', async (req, res) => {
   const { gameName, type } = req.body;

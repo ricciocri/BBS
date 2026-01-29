@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Player, GameTable, GameProposal, CollectedGame, GameType } from '../types';
 import GameCard from './GameCard';
-import { getGeekGameDetails, fetchBggUserCollection } from '../services/geekService';
+import { getGeekGameDetails } from '../services/geekService';
+import { fetchBggUserCollection } from '../services/bggService';
 import GameAutocomplete from './GameAutocomplete';
 
 interface PublicProfileProps {

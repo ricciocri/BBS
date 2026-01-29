@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { searchGeekGames, GeekGame } from '../services/geekService';
 import { GameType } from '../types';
@@ -9,9 +8,10 @@ interface GameAutocompleteProps {
   onChange: (gameName: string, id?: string, imageUrl?: string, type?: GameType) => void;
   placeholder?: string;
   className?: string;
+  disabled?: boolean;
 }
 
-const GameAutocomplete: React.FC<GameAutocompleteProps> = ({ value, gameType, onChange, placeholder, className }) => {
+const GameAutocomplete: React.FC<GameAutocompleteProps> = ({ value, gameType, onChange, placeholder, className, disabled }) => {
   const [query, setQuery] = useState(value);
   const [results, setResults] = useState<GeekGame[]>([]);
   const [isOpen, setIsOpen] = useState(false);
@@ -80,6 +80,7 @@ const GameAutocomplete: React.FC<GameAutocompleteProps> = ({ value, gameType, on
           onChange={(e) => handleSearch(e.target.value)}
           placeholder={placeholder}
           className={className}
+          disabled={disabled}
         />
         {isLoading && (
           <div className="absolute right-4 top-1/2 -translate-y-1/2">

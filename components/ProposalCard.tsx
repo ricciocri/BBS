@@ -26,13 +26,14 @@ const ProposalCard: React.FC<ProposalCardProps> = ({
   onSelectMember 
 }) => {
   const [imageLoaded, setImageLoaded] = useState(false);
-  const isInterested = currentUser ? proposal.interestedPlayerIds.includes(currentUser.id) : false;
+  const isInterested = currentUser ? !!proposal.userPreferences[currentUser.id] : false;
   const isProposer = currentUser?.id === proposal.proposer.id;
   const isAdmin = currentUser?.isAdmin;
   
+  const interestedIds = Object.keys(proposal.userPreferences);
   const SYSTEM_NOW = new Date('2026-01-23T08:06:00').getTime();
-  const progress = Math.min((proposal.interestedPlayerIds.length / proposal.maxPlayersGoal) * 100, 100);
-  const isFull = proposal.interestedPlayerIds.length >= proposal.maxPlayersGoal;
+  const progress = Math.min((interestedIds.length / proposal.maxPlayersGoal) * 100, 100);
+  const isFull = interestedIds.length >= proposal.maxPlayersGoal;
 
   const isNew = useMemo(() => {
     const created = new Date(proposal.createdAt).getTime();
@@ -40,8 +41,8 @@ const ProposalCard: React.FC<ProposalCardProps> = ({
   }, [proposal.createdAt, SYSTEM_NOW]);
 
   const interestedPlayers = useMemo(() => {
-    return allUsers.filter(u => proposal.interestedPlayerIds.includes(u.id));
-  }, [proposal.interestedPlayerIds, allUsers]);
+    return allUsers.filter(u => interestedIds.includes(u.id));
+  }, [proposal.userPreferences, allUsers, interestedIds]);
 
   const fallbackImage = proposal.type === GameType.RPG 
     ? 'https://images.unsplash.com/photo-1614812513172-567d2fe96a75?q=80&w=400&auto=format&fit=crop'
@@ -82,7 +83,7 @@ const ProposalCard: React.FC<ProposalCardProps> = ({
               </span>
             )}
             <span className={`text-[7px] uppercase font-black tracking-widest px-1.5 py-0.5 rounded backdrop-blur-md border border-white/20 shadow-xl ${proposal.type === GameType.RPG ? 'bg-indigo-600/80 text-white' : 'bg-emerald-600/80 text-white'}`}>
-              {proposal.type === GameType.RPG ? 'GdR' : 'GdT'}
+              {proposal.type === GameType.RPG ? 'GdR' : 'GDT'}
             </span>
           </div>
         </div>
@@ -92,7 +93,7 @@ const ProposalCard: React.FC<ProposalCardProps> = ({
         <div className="mb-1.5">
           <h3 className="text-[11px] font-bold text-slate-50 group-hover:text-amber-400 transition-colors line-clamp-1 leading-tight">{proposal.title}</h3>
           <p className="text-[8px] font-black uppercase tracking-tighter text-amber-500/80 leading-none">
-            {proposal.gameName}
+            {proposal.gameName || 'Qualsiasi Gioco'}
           </p>
         </div>
         
@@ -116,7 +117,7 @@ const ProposalCard: React.FC<ProposalCardProps> = ({
               )}
             </div>
             <span className={`text-[7px] font-black uppercase tracking-tight ${isFull ? 'text-amber-400 animate-pulse' : 'text-slate-600'}`}>
-              {proposal.interestedPlayerIds.length}/{proposal.maxPlayersGoal}
+              {interestedIds.length}/{proposal.maxPlayersGoal}
             </span>
           </div>
           <div className="h-0.5 w-full bg-slate-900 rounded-full overflow-hidden">
@@ -146,11 +147,11 @@ const ProposalCard: React.FC<ProposalCardProps> = ({
             }`}
           >
             <i className={`fa-${isInterested ? 'solid' : 'regular'} fa-star text-[6px]`}></i>
-            <span>Mi interessa</span>
+            <span>Interessati</span>
           </button>
           
           <button onClick={() => onConvert(proposal)} className="flex-1 py-1 rounded text-[7px] font-black uppercase tracking-widest bg-indigo-600 hover:bg-indigo-500 text-white shadow shadow-indigo-600/10 transition-all active:scale-95">
-            Apri
+            Sandbox
           </button>
 
           {(isProposer || isAdmin) && (

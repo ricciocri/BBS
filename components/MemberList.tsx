@@ -1,3 +1,4 @@
+
 import React, { useMemo, useState } from 'react';
 import { Player, GameTable, GameProposal, RankingPeriod } from '../types';
 
@@ -84,7 +85,6 @@ const MemberList: React.FC<MemberListProps> = ({
           </div>
         )}
 
-        {/* Colonna Rank */}
         <div className="flex items-center justify-center shrink-0 w-6 md:w-10">
            <div className={`w-7 h-7 md:w-9 md:h-9 rounded-full flex items-center justify-center font-black text-[10px] md:text-xs border-2 shadow-inner ${
             isInactive ? 'bg-slate-900 text-slate-700 border-slate-800' :
@@ -97,7 +97,6 @@ const MemberList: React.FC<MemberListProps> = ({
           </div>
         </div>
 
-        {/* Avatar */}
         <div className="relative shrink-0">
           <img 
             src={user.avatar} 
@@ -113,7 +112,6 @@ const MemberList: React.FC<MemberListProps> = ({
           )}
         </div>
 
-        {/* Area Centrale: Nome + Statistiche in Riga */}
         <div className="flex flex-1 flex-col min-w-0">
           <div className="flex items-center gap-2 mb-2">
             <h3 className={`text-sm md:text-base font-bold transition-colors truncate ${
@@ -128,27 +126,22 @@ const MemberList: React.FC<MemberListProps> = ({
             )}
           </div>
 
-          {/* Riga Statistiche Compact con Etichette */}
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 shrink-0">
-            {/* Host */}
             <div className="flex items-center gap-1.5 px-2 py-0.5 bg-slate-950/40 rounded-lg border border-slate-800/50" title="Tavoli Organizzati">
               <i className="fa-solid fa-crown text-amber-400 text-[8px] md:text-[9px]"></i>
               <span className="text-[7px] md:text-[8px] font-black text-slate-500 uppercase tracking-tighter">Host</span>
               <span className="text-[9px] md:text-[10px] font-black text-slate-200">{user.stats.hostedTablesCount}</span>
             </div>
-            {/* Play */}
             <div className="flex items-center gap-1.5 px-2 py-0.5 bg-slate-950/40 rounded-lg border border-slate-800/50" title="Tavoli Partecipati">
               <i className="fa-solid fa-people-group text-emerald-400 text-[8px] md:text-[9px]"></i>
               <span className="text-[7px] md:text-[8px] font-black text-slate-500 uppercase tracking-tighter">Play</span>
               <span className="text-[9px] md:text-[10px] font-black text-slate-200">{user.stats.joinedTablesCount}</span>
             </div>
-            {/* Idea */}
             <div className="flex items-center gap-1.5 px-2 py-0.5 bg-slate-950/40 rounded-lg border border-slate-800/50" title="Proposte Lanciate">
               <i className="fa-solid fa-lightbulb text-amber-500 text-[8px] md:text-[9px]"></i>
               <span className="text-[7px] md:text-[8px] font-black text-slate-500 uppercase tracking-tighter">Idea</span>
               <span className="text-[9px] md:text-[10px] font-black text-slate-200">{user.stats.createdProposalsCount}</span>
             </div>
-            {/* Star */}
             <div className="flex items-center gap-1.5 px-2 py-0.5 bg-slate-950/40 rounded-lg border border-slate-800/50" title="Interessi Espressi">
               <i className="fa-solid fa-star text-indigo-400 text-[8px] md:text-[9px]"></i>
               <span className="text-[7px] md:text-[8px] font-black text-slate-500 uppercase tracking-tighter">Star</span>
@@ -157,7 +150,6 @@ const MemberList: React.FC<MemberListProps> = ({
           </div>
         </div>
 
-        {/* Score Finale */}
         <div className={`shrink-0 flex items-center gap-2 bg-slate-950/40 px-3 py-2 md:px-4 h-12 md:h-14 rounded-xl border transition-colors ${
           isMe ? 'border-indigo-400/50 bg-indigo-500/20 shadow-inner shadow-indigo-500/10' : 
           isInactive ? 'border-slate-800' : 'border-slate-800 group-hover:border-indigo-500/30'
@@ -169,7 +161,6 @@ const MemberList: React.FC<MemberListProps> = ({
           <span className="hidden xs:inline text-[8px] text-slate-600 font-black uppercase tracking-tighter">pts</span>
         </div>
 
-        {/* Freccia Desktop */}
         <div className="hidden md:block shrink-0">
            <div className={`w-8 h-8 rounded-lg transition-all flex items-center justify-center border ${
              isInactive 
@@ -217,7 +208,6 @@ const MemberList: React.FC<MemberListProps> = ({
         </div>
         
         <div className="flex flex-col sm:flex-row gap-4 flex-1 max-w-2xl xl:justify-end">
-          {/* Selettore Periodo */}
           <div className="flex bg-slate-800/50 p-1 rounded-xl border border-slate-700 h-10 shrink-0 overflow-x-auto no-scrollbar">
             {periodButtons.map((period) => (
               <button
@@ -247,7 +237,6 @@ const MemberList: React.FC<MemberListProps> = ({
         </div>
       </div>
 
-      {/* Riquadro Informativo Punteggi */}
       <div className={`glass rounded-2xl border border-indigo-500/20 overflow-hidden transition-all duration-500 ${showScoreInfo ? 'max-h-[1200px] p-4 md:p-6 opacity-100' : 'max-h-0 p-0 opacity-0 border-none'}`}>
         <div className="flex justify-between items-center mb-6 px-1">
           <h3 className="text-xs md:text-sm font-black text-indigo-400 uppercase tracking-widest flex items-center gap-2">
