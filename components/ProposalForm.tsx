@@ -29,6 +29,8 @@ const ProposalForm: React.FC<ProposalFormProps> = ({ onCancel, onSubmit, initial
     system: ''
   });
 
+  const [error, setError] = useState('');
+
   useEffect(() => {
     if (initialData) {
       setFormData(prev => ({
@@ -93,7 +95,22 @@ const ProposalForm: React.FC<ProposalFormProps> = ({ onCancel, onSubmit, initial
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSubmit({ ...formData, title: formData.gameName });
+    setError('');
+
+    // Validazione rigorosa: Immagine e Descrizione sono obbligatorie
+    if (!formData.imageUrl || !formData.description) {
+      setError('Immagine e Descrizione sono obbligatorie.');
+      return;
+    }
+
+    // Almeno uno tra Titolo, Data, Ora, Luogo o Sistema deve essere compilato
+    const hasLogisticalData = formData.gameName || formData.date || formData.time || formData.location || formData.system;
+    if (!hasLogisticalData) {
+      setError('Inserisci almeno un dettaglio logistico (Gioco, Data, Ora, Luogo o Sistema).');
+      return;
+    }
+
+    onSubmit({ ...formData, title: formData.gameName || 'Idea di Gioco' });
   };
 
   return (
@@ -107,10 +124,17 @@ const ProposalForm: React.FC<ProposalFormProps> = ({ onCancel, onSubmit, initial
         </button>
       </div>
 
+      {error && (
+        <div className="mb-6 p-4 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-400 text-xs font-bold flex items-center gap-3">
+          <i className="fa-solid fa-triangle-exclamation"></i>
+          {error}
+        </div>
+      )}
+
       <form onSubmit={handleSubmit} className="space-y-5 md:space-y-6">
         <div className="space-y-5">
             <div className="col-span-full">
-                <label className="block text-xs md:text-sm font-semibold text-slate-400 mb-2">Gioco (Opzionale, Cerca su BGG/RPGGeek)</label>
+                <label className="block text-xs md:text-sm font-semibold text-slate-400 mb-2">Gioco (Cerca su BGG/RPGGeek)</label>
                 <GameAutocomplete 
                   value={formData.gameName}
                   gameType={formData.type}
@@ -159,21 +183,9 @@ const ProposalForm: React.FC<ProposalFormProps> = ({ onCancel, onSubmit, initial
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              <div>
-                <label className="block text-xs md:text-sm font-semibold text-slate-400 mb-2">Obiettivo Giocatori</label>
-                <input 
-                  required
-                  type="number" 
-                  min="1" 
-                  className="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-4 md:py-3 text-white outline-none text-base" 
-                  value={formData.maxPlayersGoal} 
-                  onChange={e => setFormData({...formData, maxPlayersGoal: parseInt(e.target.value)})} 
-                />
-              </div>
-
-              <div className="flex flex-col justify-end">
-                <label className="block text-xs md:text-sm font-semibold text-slate-400 mb-2">Immagine</label>
+            <div className="grid grid-cols-1 gap-5">
+              <div className="flex flex-col">
+                <label className="block text-xs md:text-sm font-semibold text-slate-400 mb-2">Immagine (Obbligatoria)</label>
                 <div className="flex gap-2">
                     {formData.imageUrl && (
                         <img src={formData.imageUrl} className="w-14 h-14 object-cover rounded-lg border border-slate-700 shrink-0" alt="" />
@@ -183,7 +195,7 @@ const ProposalForm: React.FC<ProposalFormProps> = ({ onCancel, onSubmit, initial
                       onClick={() => fileInputRef.current?.click()}
                       className="flex-1 px-4 py-3 bg-slate-800/50 border border-slate-700 rounded-xl text-xs text-slate-400 hover:text-white transition-all h-14 flex items-center justify-center"
                     >
-                      <i className="fa-solid fa-upload mr-2"></i> Foto
+                      <i className="fa-solid fa-upload mr-2"></i> Seleziona Foto
                     </button>
                     <input ref={fileInputRef} type="file" className="hidden" accept="image/*" onChange={handleFileChange} />
                 </div>

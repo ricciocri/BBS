@@ -1,14 +1,14 @@
 
 import React, { useMemo, useState } from 'react';
-import { GameProposal, UserPreference, Player, GameType, GameFormat } from '../types';
+import { GameProposal, DraftTable, Player } from '../types';
 import GameAutocomplete from './GameAutocomplete';
 
 interface ProposalPlannerProps {
   proposal: GameProposal;
   currentUser: Player | null;
   allUsers: Player[];
-  onUpdatePreference: (proposalId: string, userId: string, prefs: UserPreference) => void;
-  onConfirmProposal: (proposalId: string, clusterKey: string) => void;
+  onUpdateDrafts: (proposalId: string, drafts: DraftTable[]) => void;
+  onConfirmDraft: (draft: DraftTable) => void;
   onJoinProposal: (proposalId: string) => void;
   onSelectMember: (id: string) => void;
 }
@@ -17,206 +17,258 @@ const ProposalPlanner: React.FC<ProposalPlannerProps> = ({
   proposal,
   currentUser,
   allUsers,
-  onUpdatePreference,
-  onConfirmProposal,
+  onUpdateDrafts,
+  onConfirmDraft,
   onJoinProposal,
   onSelectMember
 }) => {
-  const [isEditing, setIsEditing] = useState(false);
-  const [localPref, setLocalPref] = useState<UserPreference | null>(
-    currentUser ? proposal.userPreferences[currentUser.id] || null : null
-  );
+  const [isAddingDraft, setIsAddingDraft] = useState(false);
+  const [newDraft, setNewDraft] = useState<Partial<DraftTable>>({
+    gameName: proposal.gameName,
+    date: '',
+    time: '',
+    location: '',
+    system: '',
+    maxPlayers: 4
+  });
 
-  const userPrefs = proposal.userPreferences;
-  const participantsIds = Object.keys(userPrefs);
-  const isParticipant = currentUser && participantsIds.includes(currentUser.id);
+  const isInterestedGeneral = currentUser && (proposal.interestedPlayerIds || []).includes(currentUser.id);
 
-  // Clustering logic: Group users by identical preferences
-  const clusters = useMemo(() => {
-    const map: Record<string, string[]> = {};
-    participantsIds.forEach(uid => {
-      const pref = userPrefs[uid];
-      const key = JSON.stringify(pref);
-      if (!map[key]) map[key] = [];
-      map[key].push(uid);
+  const handleToggleJoinDraft = (draftId: string) => {
+    if (!currentUser) return;
+    const updatedDrafts = (proposal.drafts || []).map(d => {
+      if (d.id === draftId) {
+        const isJoined = (d.joinedUserIds || []).includes(currentUser.id);
+        return {
+          ...d,
+          joinedUserIds: isJoined 
+            ? (d.joinedUserIds || []).filter(uid => uid !== currentUser.id)
+            : [...(d.joinedUserIds || []), currentUser.id]
+        };
+      }
+      return d;
     });
-    return map;
-  }, [userPrefs, participantsIds]);
-
-  const handleDragStart = (e: React.DragEvent, userId: string) => {
-    e.dataTransfer.setData('userId', userId);
+    onUpdateDrafts(proposal.id, updatedDrafts);
   };
 
-  const handleDropOnCluster = (e: React.DragEvent, clusterKey: string) => {
-    e.preventDefault();
-    const draggedUserId = e.dataTransfer.getData('userId');
-    if (draggedUserId && draggedUserId === currentUser?.id) {
-      const targetPrefs = JSON.parse(clusterKey) as UserPreference;
-      onUpdatePreference(proposal.id, draggedUserId, targetPrefs);
-    }
+  const handleAddDraft = () => {
+    if (!currentUser) return;
+    const draftToAdd: DraftTable = {
+      id: Date.now().toString(),
+      proposerId: currentUser.id,
+      gameName: newDraft.gameName || proposal.gameName,
+      date: newDraft.date,
+      time: newDraft.time,
+      location: newDraft.location,
+      system: newDraft.system,
+      maxPlayers: newDraft.maxPlayers || 4,
+      joinedUserIds: [currentUser.id]
+    };
+    onUpdateDrafts(proposal.id, [...(proposal.drafts || []), draftToAdd]);
+    setIsAddingDraft(false);
+    setNewDraft({ gameName: proposal.gameName, date: '', time: '', location: '', system: '', maxPlayers: 4 });
   };
 
-  const handleSavePref = () => {
-    if (currentUser && localPref) {
-      onUpdatePreference(proposal.id, currentUser.id, localPref);
-      setIsEditing(false);
-    }
+  const handleRemoveDraft = (draftId: string) => {
+    const updatedDrafts = (proposal.drafts || []).filter(d => d.id !== draftId);
+    onUpdateDrafts(proposal.id, updatedDrafts);
   };
 
-  // Fix: Cast Object.entries(clusters) to [string, string[]][] to resolve unknown type errors in sub-calls
-  const clusterEntries = Object.entries(clusters) as [string, string[]][];
+  const draftsList = proposal.drafts || [];
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      <div className="flex items-center justify-between border-b border-slate-800 pb-4">
-        <h3 className="text-sm font-black uppercase tracking-[0.2em] text-white flex items-center gap-3">
-          <i className="fa-solid fa-users-gear text-amber-500"></i>
-          Sandbox Collaborativa
-        </h3>
-        {!isParticipant && currentUser && (
-          <button 
-            onClick={() => onJoinProposal(proposal.id)}
-            className="px-4 py-2 bg-amber-500 text-slate-950 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg active:scale-95 transition-all"
-          >
-            Partecipa alla Proposta
-          </button>
-        )}
+    <div className="space-y-10 animate-in fade-in duration-500">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-800 pb-6">
+        <div>
+          <h3 className="text-base font-black uppercase tracking-[0.2em] text-white flex items-center gap-3">
+            <i className="fa-solid fa-shop text-amber-500"></i>
+            Marketplace delle Bozze
+          </h3>
+          <p className="text-[10px] font-bold text-slate-500 uppercase mt-1">Scegli una configurazione o proponine una nuova</p>
+        </div>
+        
+        <div className="flex items-center gap-3">
+          {!isInterestedGeneral && currentUser && (
+            <button 
+              onClick={() => onJoinProposal(proposal.id)}
+              className="px-4 py-2 bg-slate-800 text-slate-300 border border-slate-700 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-700 transition-all"
+            >
+              Interesse Generale
+            </button>
+          )}
+          {currentUser && (
+            <button 
+              onClick={() => setIsAddingDraft(!isAddingDraft)}
+              className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-indigo-600/20 active:scale-95 transition-all flex items-center gap-2"
+            >
+              <i className={`fa-solid ${isAddingDraft ? 'fa-xmark' : 'fa-plus'}`}></i>
+              {isAddingDraft ? 'Annulla' : 'Proponi Tua Configurazione'}
+            </button>
+          )}
+        </div>
       </div>
 
-      {isParticipant && (
-        <div className="glass p-6 rounded-3xl border border-indigo-500/20">
-          <div className="flex items-center justify-between mb-6">
-            <h4 className="text-[10px] font-black uppercase tracking-widest text-indigo-400">Le tue Preferenze</h4>
-            <button 
-              onClick={() => setIsEditing(!isEditing)} 
-              className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-white"
-            >
-              {isEditing ? 'Annulla' : 'Modifica'}
-            </button>
-          </div>
-
-          {isEditing ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="md:col-span-2">
-                <label className="block text-[8px] font-black text-slate-500 uppercase mb-1 ml-1">Gioco</label>
-                <GameAutocomplete 
-                  value={localPref?.gameName || ''} 
-                  onChange={(name) => setLocalPref(p => p ? {...p, gameName: name} : null)}
-                  placeholder="Nome Gioco..."
-                  className={`w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white ${proposal.isGameFixed ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  disabled={proposal.isGameFixed}
-                />
-              </div>
-              <div>
-                <label className="block text-[8px] font-black text-slate-500 uppercase mb-1 ml-1">Data</label>
-                <input type="date" className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white" value={localPref?.date || ''} onChange={e => setLocalPref(p => p ? {...p, date: e.target.value} : null)} />
-              </div>
-              <div>
-                <label className="block text-[8px] font-black text-slate-500 uppercase mb-1 ml-1">Ora</label>
-                <input type="time" className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white" value={localPref?.time || ''} onChange={e => setLocalPref(p => p ? {...p, time: e.target.value} : null)} />
-              </div>
-              <div>
-                <label className="block text-[8px] font-black text-slate-500 uppercase mb-1 ml-1">Luogo</label>
-                <input type="text" className="w-full bg-slate-900 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white" placeholder="Luogo..." value={localPref?.location || ''} onChange={e => setLocalPref(p => p ? {...p, location: e.target.value} : null)} />
-              </div>
-              <div className="md:col-span-2 pt-4">
-                <button 
-                  onClick={handleSavePref}
-                  className="w-full py-3 bg-indigo-600 text-white rounded-xl text-xs font-black uppercase tracking-widest shadow-lg"
-                >
-                  Aggiorna Preferenze
-                </button>
-              </div>
+      {isAddingDraft && (
+        <div className="glass p-6 md:p-8 rounded-[2rem] border border-indigo-500/30 shadow-2xl animate-in zoom-in-95 duration-300">
+          <h4 className="text-xs font-black uppercase tracking-widest text-indigo-400 mb-6">Nuova Bozza Logistica</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="md:col-span-2">
+              <label className="block text-[8px] font-black text-slate-500 uppercase mb-1 ml-1">Gioco / Titolo Alternativo</label>
+              <GameAutocomplete 
+                value={newDraft.gameName || ''} 
+                onChange={(name) => setNewDraft(p => ({...p, gameName: name}))}
+                placeholder="Nome Gioco..."
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white outline-none focus:ring-1 focus:ring-indigo-500/30"
+              />
             </div>
-          ) : (
-            <div className="flex flex-wrap gap-4 items-center">
-              <div 
-                draggable 
-                onDragStart={(e) => handleDragStart(e, currentUser!.id)}
-                className="w-12 h-12 rounded-xl border-2 border-indigo-400 p-0.5 animate-pulse cursor-grab active:cursor-grabbing"
+            <div>
+              <label className="block text-[8px] font-black text-slate-500 uppercase mb-1 ml-1">Data</label>
+              <input type="date" className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white outline-none focus:ring-1 focus:ring-indigo-500/30" value={newDraft.date} onChange={e => setNewDraft(p => ({...p, date: e.target.value}))} />
+            </div>
+            <div>
+              <label className="block text-[8px] font-black text-slate-500 uppercase mb-1 ml-1">Ora</label>
+              <input type="time" className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white outline-none focus:ring-1 focus:ring-indigo-500/30" value={newDraft.time} onChange={e => setNewDraft(p => ({...p, time: e.target.value}))} />
+            </div>
+            <div>
+              <label className="block text-[8px] font-black text-slate-500 uppercase mb-1 ml-1">Luogo</label>
+              <input type="text" className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white outline-none focus:ring-1 focus:ring-indigo-500/30" placeholder="Es: La Gilda..." value={newDraft.location} onChange={e => setNewDraft(p => ({...p, location: e.target.value}))} />
+            </div>
+            <div>
+              <label className="block text-[8px] font-black text-slate-500 uppercase mb-1 ml-1">Sistema (per GdR)</label>
+              <input type="text" className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-white outline-none focus:ring-1 focus:ring-indigo-500/30" placeholder="Es: D&D 5e..." value={newDraft.system} onChange={e => setNewDraft(p => ({...p, system: e.target.value}))} />
+            </div>
+            <div className="md:col-span-2 pt-4">
+              <button 
+                onClick={handleAddDraft}
+                className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl text-xs font-black uppercase tracking-widest shadow-lg shadow-emerald-600/20 transition-all active:scale-95"
               >
-                <img src={currentUser!.avatar} className="w-full h-full object-cover rounded-lg" alt="" />
-              </div>
-              <div className="flex-1 space-y-1">
-                <p className="text-xs font-bold text-white">{localPref?.gameName || 'Gioco non scelto'}</p>
-                <p className="text-[10px] text-slate-500 uppercase font-bold tracking-tight">
-                  {localPref?.date ? `${localPref.date} @ ${localPref.time}` : 'Data da definire'} • {localPref?.location || 'Luogo da definire'}
-                </p>
-              </div>
-              <p className="text-[8px] text-slate-600 font-bold uppercase italic">Trascina il tuo avatar per cambiare gruppo</p>
+                Pubblica nel Marketplace
+              </button>
             </div>
-          )}
+          </div>
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {clusterEntries.map(([clusterKey, userIds]) => {
-          const pref = JSON.parse(clusterKey) as UserPreference;
-          const status = proposal.clusterStatus[clusterKey] || 'draft';
-          // Fix: userIds is now string[] instead of unknown
-          const isComplete = userIds.length >= (pref.maxPlayers || 2);
-          
-          return (
-            <div 
-              key={clusterKey}
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={(e) => handleDropOnCluster(e, clusterKey)}
-              className={`relative glass p-5 rounded-3xl border-2 transition-all duration-300 ${
-                status === 'proposing' ? 'border-amber-500 shadow-[0_0_20px_rgba(245,158,11,0.3)] animate-highlight' : 
-                isComplete ? 'border-emerald-500/50' : 'border-dashed border-slate-700'
-              } hover:bg-slate-900/40`}
-            >
-              <div className="flex justify-between items-start mb-4">
-                <div className="space-y-1">
-                  <h5 className="text-xs font-black text-white uppercase">{pref.gameName || 'Senza Nome'}</h5>
-                  <div className="flex items-center gap-2 text-[8px] font-bold text-slate-500 uppercase">
-                    <i className="fa-solid fa-calendar text-indigo-400"></i>
-                    {pref.date || 'TBD'}
-                    <i className="fa-solid fa-clock text-indigo-400 ml-1"></i>
-                    {pref.time || 'TBD'}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        {draftsList.length > 0 ? (
+          draftsList.map((draft) => {
+            const proposer = allUsers.find(u => u.id === draft.proposerId);
+            const isJoined = currentUser && (draft.joinedUserIds || []).includes(currentUser.id);
+            const canManage = currentUser && draft.proposerId === currentUser.id;
+            const joinedIds = draft.joinedUserIds || [];
+
+            return (
+              <div 
+                key={draft.id}
+                className={`glass group p-6 rounded-[2rem] border transition-all duration-500 flex flex-col bg-slate-900/40 border-slate-800 hover:border-indigo-500/40 hover:shadow-2xl hover:shadow-indigo-500/5`}
+              >
+                <div className="flex justify-between items-start mb-5">
+                  <div className="flex items-center gap-3">
+                    <div 
+                      className="relative cursor-pointer"
+                      onClick={() => onSelectMember(draft.proposerId)}
+                    >
+                      <img src={proposer?.avatar} className="w-12 h-12 rounded-2xl border-2 border-slate-700 object-cover group-hover:border-indigo-500 transition-colors" alt="" />
+                      <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-lg bg-indigo-600 border border-slate-900 flex items-center justify-center text-[8px] text-white">
+                        <i className="fa-solid fa-crown"></i>
+                      </div>
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-white uppercase tracking-tight truncate max-w-[150px]">{proposer?.name}</h4>
+                      <span className="text-[8px] font-black text-slate-500 uppercase tracking-widest">Proponente Bozza</span>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                     {canManage && (
+                        <button 
+                          onClick={() => handleRemoveDraft(draft.id)}
+                          className="w-8 h-8 rounded-xl bg-red-900/20 text-red-500 border border-red-500/20 hover:bg-red-600 hover:text-white transition-all flex items-center justify-center shadow-lg"
+                        >
+                          <i className="fa-solid fa-trash-can text-[10px]"></i>
+                        </button>
+                     )}
+                     <button 
+                        onClick={() => onConfirmDraft(draft)}
+                        className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-indigo-600/20 active:scale-95 transition-all flex items-center gap-2"
+                      >
+                        <i className="fa-solid fa-door-open"></i>
+                        Apri
+                      </button>
                   </div>
                 </div>
-                <span className={`text-[8px] font-black px-1.5 py-0.5 rounded-full border ${
-                  status === 'proposing' ? 'bg-amber-500 text-slate-950 border-amber-300' : 'bg-slate-950 text-slate-500 border-slate-800'
-                }`}>
-                  {status.toUpperCase()}
-                </span>
-              </div>
 
-              <div className="flex flex-wrap gap-2 mb-6">
-                {/* Fix: userIds is now string[] instead of unknown */}
-                {userIds.map(uid => {
-                  const u = allUsers.find(x => x.id === uid);
-                  return (
-                    <div 
-                      key={uid} 
-                      onClick={() => onSelectMember(uid)}
-                      className="w-10 h-10 rounded-xl overflow-hidden border border-slate-700 cursor-pointer hover:border-white transition-all"
-                    >
-                      <img src={u?.avatar} className="w-full h-full object-cover" alt={u?.name} title={u?.name} />
-                    </div>
-                  );
-                })}
-              </div>
+                <div className="flex-1 space-y-4 mb-6">
+                   <div className="p-3 bg-slate-950/40 rounded-2xl border border-slate-800/50">
+                      <p className="text-xs font-bold text-indigo-300 uppercase mb-2">{draft.gameName || proposal.gameName}</p>
+                      <div className="grid grid-cols-2 gap-y-2">
+                        <div className="flex items-center gap-2">
+                           <i className="fa-solid fa-calendar text-slate-600 text-[10px]"></i>
+                           <span className="text-[10px] font-black text-slate-300 uppercase">{draft.date || 'Data TBD'}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                           <i className="fa-solid fa-clock text-slate-600 text-[10px]"></i>
+                           <span className="text-[10px] font-black text-slate-300 uppercase">{draft.time || 'Ora TBD'}</span>
+                        </div>
+                        <div className="flex items-center gap-2 col-span-2">
+                           <i className="fa-solid fa-location-dot text-slate-600 text-[10px]"></i>
+                           <span className="text-[10px] font-black text-slate-300 uppercase truncate">{draft.location || 'Luogo TBD'}</span>
+                        </div>
+                      </div>
+                   </div>
 
-              <div className="flex items-center justify-between mt-auto pt-4 border-t border-slate-800/50">
-                {/* Fix: userIds is now string[] instead of unknown */}
-                <span className="text-[10px] font-black text-slate-500 uppercase">{userIds.length} Partecipanti</span>
-                {/* Fix: userIds is now string[] instead of unknown */}
-                {userIds.includes(currentUser?.id || '') && (
-                  <button 
-                    onClick={() => onConfirmProposal(proposal.id, clusterKey)}
-                    className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${
-                      status === 'proposing' ? 'bg-emerald-600 text-white animate-pulse' : 'bg-indigo-600 text-white hover:bg-indigo-500'
+                   {draft.system && (
+                     <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-sky-900/20 border border-sky-500/30">
+                        <i className="fa-solid fa-dice-d20 text-sky-400 text-[9px]"></i>
+                        <span className="text-[9px] font-black text-sky-400 uppercase tracking-tighter">Sistema: {draft.system}</span>
+                     </div>
+                   )}
+                </div>
+
+                <div className="pt-4 border-t border-white/5 flex items-center justify-between">
+                   <div className="flex -space-x-2">
+                      {joinedIds.map(uid => {
+                        const u = allUsers.find(x => x.id === uid);
+                        return (
+                          <img 
+                            key={uid} 
+                            src={u?.avatar} 
+                            onClick={() => onSelectMember(uid)}
+                            className="w-7 h-7 rounded-lg border-2 border-slate-900 object-cover cursor-pointer hover:z-10 transition-transform hover:-translate-y-1 shadow-md" 
+                            alt="" 
+                          />
+                        );
+                      })}
+                      <div className="flex flex-col justify-center ml-4">
+                        <span className="text-[10px] font-black text-white uppercase">{joinedIds.length} Partecipanti</span>
+                      </div>
+                   </div>
+
+                   <button 
+                    onClick={() => handleToggleJoinDraft(draft.id)}
+                    className={`px-6 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all border ${
+                      isJoined 
+                        ? 'bg-rose-600 text-white border-rose-500 shadow-lg shadow-rose-600/20' 
+                        : 'bg-slate-800 text-slate-400 border-slate-700 hover:text-white hover:border-emerald-500/50 hover:bg-emerald-600/10'
                     }`}
-                  >
-                    {status === 'proposing' ? 'Conferma Apertura' : 'Proponi Apertura'}
-                  </button>
-                )}
+                   >
+                     {isJoined ? 'Esci' : 'Unisciti'}
+                   </button>
+                </div>
               </div>
-            </div>
-          );
-        })}
+            );
+          })
+        ) : (
+          <div className="xl:col-span-2 py-16 text-center glass rounded-[3rem] border-2 border-dashed border-slate-800 opacity-60">
+             <i className="fa-solid fa-layer-group text-5xl mb-4 text-slate-800"></i>
+             <p className="text-xs font-black text-slate-700 uppercase tracking-[0.2em]">Nessuna configurazione proposta nel marketplace.</p>
+             <button 
+                onClick={() => setIsAddingDraft(true)}
+                className="mt-6 text-indigo-400 hover:text-indigo-300 text-[10px] font-black uppercase tracking-widest underline decoration-indigo-500/30 underline-offset-8"
+              >
+               Lancia la prima bozza
+             </button>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -1,6 +1,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { GameTable, GameProposal, GameType, GameFormat, Player } from '../types';
+import { GameTable, GameProposal, GameType, GameFormat, Player, DraftTable } from '../types';
+import ProposalPlanner from './ProposalPlanner';
 
 interface GameDetailViewProps {
   data: GameTable | GameProposal;
@@ -14,6 +15,8 @@ interface GameDetailViewProps {
   onEdit: (data: any) => void;
   onSelectMember: (userId: string) => void;
   onDelete?: (id: string) => Promise<void> | void;
+  onUpdateDrafts: (proposalId: string, drafts: DraftTable[]) => void;
+  onConfirmDraft: (draft: DraftTable) => void;
 }
 
 const GameDetailView: React.FC<GameDetailViewProps> = ({ 
@@ -27,7 +30,9 @@ const GameDetailView: React.FC<GameDetailViewProps> = ({
   onSecondaryAction,
   onEdit,
   onSelectMember,
-  onDelete
+  onDelete,
+  onUpdateDrafts,
+  onConfirmDraft
 }) => {
   const [isDeleting, setIsDeleting] = useState(false);
   const [showScrollTop, setShowScrollTop] = useState(false);
@@ -46,9 +51,7 @@ const GameDetailView: React.FC<GameDetailViewProps> = ({
   const isJoined = isTable && currentUser ? table!.currentPlayers.some(p => p.id === currentUser.id) : false;
   const isInterested = !isTable && currentUser ? proposal!.interestedPlayerIds.includes(currentUser.id) : false;
   
-  const isFull = isTable 
-    ? table!.currentPlayers.length >= table!.maxPlayers 
-    : proposal!.interestedPlayerIds.length >= proposal!.maxPlayersGoal;
+  const isFull = isTable && table!.currentPlayers.length >= table!.maxPlayers;
 
   const participants = isTable 
     ? table!.currentPlayers 
@@ -195,7 +198,7 @@ const GameDetailView: React.FC<GameDetailViewProps> = ({
           <div className="flex items-center flex-wrap gap-x-2 gap-y-1">
             <span className="text-slate-500 text-[10px] md:text-xs font-black uppercase tracking-[0.2em]">GIOCO BASE:</span>
             <div className="flex items-center gap-2">
-              <span className="text-emerald-400 text-xs md:text-base font-black uppercase tracking-widest">{data.gameName}</span>
+              <span className="text-emerald-400 text-xs md:text-base font-black uppercase tracking-widest">{data.gameName || 'Qualsiasi gioco'}</span>
               <a href={getGameUrl()} target="_blank" rel="noopener noreferrer" className="text-slate-400 hover:text-white transition-colors">
                 <i className="fa-solid fa-external-link text-[10px]"></i>
               </a>
@@ -220,16 +223,16 @@ const GameDetailView: React.FC<GameDetailViewProps> = ({
             </div>
 
             {!isTable && (
-              <div 
-                onClick={() => onSelectMember(proposal!.proposer.id)}
-                className="glass p-4 rounded-2xl border border-amber-500/10 flex items-center gap-4 cursor-pointer hover:border-amber-500/30 transition-all shadow-lg"
-              >
-                <img src={proposal!.proposer.avatar} className="w-12 h-12 rounded-xl object-cover border border-amber-500/30" alt={proposal!.proposer.name} />
-                <div className="min-w-0">
-                  <p className="text-[8px] font-black text-amber-500 uppercase tracking-widest">Creatore della Proposta</p>
-                  <p className="text-sm font-bold text-white truncate">{proposal!.proposer.name}</p>
-                </div>
-                <i className="fa-solid fa-chevron-right text-slate-700 ml-auto"></i>
+              <div className="space-y-12">
+                <ProposalPlanner 
+                  proposal={proposal!} 
+                  currentUser={currentUser} 
+                  allUsers={allUsers}
+                  onUpdateDrafts={onUpdateDrafts}
+                  onConfirmDraft={onConfirmDraft}
+                  onJoinProposal={() => onPrimaryAction(proposal!.id)}
+                  onSelectMember={onSelectMember}
+                />
               </div>
             )}
           </div>
@@ -241,7 +244,7 @@ const GameDetailView: React.FC<GameDetailViewProps> = ({
                     {isTable ? 'Stato Partecipazione' : 'Stato Interesse'}
                   </p>
                   <div className={`text-2xl font-black ${isInactive ? 'text-red-400' : 'text-white'}`}>
-                    {participants.length} / {isTable ? table!.maxPlayers : proposal!.maxPlayersGoal}
+                    {participants.length} {isTable ? `/ ${table!.maxPlayers}` : 'Interessati'}
                   </div>
                 </div>
 

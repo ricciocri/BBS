@@ -32,8 +32,6 @@ const ProposalCard: React.FC<ProposalCardProps> = ({
   
   const interestedIds = Object.keys(proposal.userPreferences);
   const SYSTEM_NOW = new Date('2026-01-23T08:06:00').getTime();
-  const progress = Math.min((interestedIds.length / proposal.maxPlayersGoal) * 100, 100);
-  const isFull = interestedIds.length >= proposal.maxPlayersGoal;
 
   const isNew = useMemo(() => {
     const created = new Date(proposal.createdAt).getTime();
@@ -47,6 +45,8 @@ const ProposalCard: React.FC<ProposalCardProps> = ({
   const fallbackImage = proposal.type === GameType.RPG 
     ? 'https://images.unsplash.com/photo-1614812513172-567d2fe96a75?q=80&w=400&auto=format&fit=crop'
     : 'https://images.unsplash.com/photo-1585504198199-20277593b94f?q=80&w=400&auto=format&fit=crop';
+
+  const draftsCount = proposal.drafts?.length || 0;
 
   return (
     <div className="relative rounded-lg overflow-hidden transition-all duration-300 border border-slate-800 flex flex-col group bg-gradient-to-b from-slate-900/80 to-slate-950 shadow-sm hover:border-amber-500/50 hover:shadow-amber-500/20">
@@ -101,9 +101,8 @@ const ProposalCard: React.FC<ProposalCardProps> = ({
           {proposal.description}
         </p>
 
-        {/* Partecipanti Interessati Densificati */}
-        <div className="mb-2 p-1.5 bg-slate-950/40 rounded border border-slate-800/50 space-y-1">
-          <div className="flex items-center justify-between">
+        {/* Partecipanti Interessati e Contatore Bozze */}
+        <div className="mb-2 p-1.5 bg-slate-950/40 rounded border border-slate-800/50 flex items-center justify-between">
             <div className="flex -space-x-1">
               {interestedPlayers.slice(0, 3).map((p) => (
                 <div key={p.id} className="relative cursor-pointer hover:z-10 transition-transform hover:-translate-y-0.5" onClick={() => onSelectMember(p.id)}>
@@ -116,13 +115,21 @@ const ProposalCard: React.FC<ProposalCardProps> = ({
                 </div>
               )}
             </div>
-            <span className={`text-[7px] font-black uppercase tracking-tight ${isFull ? 'text-amber-400 animate-pulse' : 'text-slate-600'}`}>
-              {interestedIds.length}/{proposal.maxPlayersGoal}
-            </span>
-          </div>
-          <div className="h-0.5 w-full bg-slate-900 rounded-full overflow-hidden">
-            <div className="h-full rounded-full transition-all duration-500 ease-out bg-amber-500" style={{ width: `${progress}%` }}></div>
-          </div>
+            
+            <div className="flex flex-col items-end gap-0.5">
+              <div className="flex items-center gap-1">
+                <i className="fa-solid fa-users text-[8px] text-amber-500/60"></i>
+                <span className="text-[8px] font-black uppercase tracking-tight text-white">
+                  {interestedIds.length} Interessati
+                </span>
+              </div>
+              <div className="flex items-center gap-1">
+                <i className="fa-solid fa-layer-group text-[8px] text-amber-500/60"></i>
+                <span className="text-[8px] font-black uppercase tracking-tight text-amber-500/80">
+                  {draftsCount > 0 ? `${draftsCount} Bozze` : 'Nessuna bozza'}
+                </span>
+              </div>
+            </div>
         </div>
 
         {/* Metadati densificati */}

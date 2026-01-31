@@ -10,7 +10,8 @@ class ApiService {
   private useFallback = false;
 
   private getStorageKey(endpoint: string) {
-    return `bbs_backup_${endpoint.replace(/\//g, '_')}`;
+    // HARD RESET: Cambiato prefisso da bbs_backup_ a bbs_v4_reset_
+    return `bbs_v4_reset_${endpoint.replace(/\//g, '_')}`;
   }
 
   private async request<T>(endpoint: string, options?: RequestInit): Promise<T> {
@@ -90,8 +91,6 @@ class ApiService {
   }
 
   async saveTable(table: GameTable): Promise<void> {
-    // Se l'ID è corto è una creazione, se è lungo (timestamp) o esistente è un update
-    // In questo mock semplifichiamo: se esiste aggiorna, altrimenti crea.
     return this.request(`/tables/${table.id}`, {
       method: 'PUT',
       body: JSON.stringify(table),

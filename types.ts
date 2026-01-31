@@ -15,13 +15,18 @@ export type SortType = 'session' | 'creation';
 export type GroupType = 'none' | 'day' | 'week' | 'month' | 'year' | 'game';
 
 /**
- * UserPreference represents specific planning choices made by a user for a proposal.
+ * DraftTable represents a specific logistic configuration proposed by a user
+ * within a persistent GameProposal hub.
  */
-export interface UserPreference {
+export interface DraftTable {
+  id: string;
+  proposerId: string;
   gameName?: string;
   date?: string;
   time?: string;
   location?: string;
+  system?: string;
+  joinedUserIds: string[];
   maxPlayers?: number;
 }
 
@@ -111,15 +116,12 @@ export interface GameProposal {
   maxPlayersGoal: number;
   createdAt: string;
   geekId?: string;
-  // userPreferences and clusterStatus support the sandbox collaborative planning feature
-  userPreferences: Record<string, UserPreference>;
-  clusterStatus: Record<string, 'draft' | 'proposing' | 'opened'>;
+  // Marketplace of multiple logistic drafts
+  drafts: DraftTable[];
   isGameFixed?: boolean;
-  // Logistical draft fields
-  date?: string;
-  time?: string;
-  location?: string;
-  system?: string;
+  // Added properties to match mock data and component usage
+  userPreferences: Record<string, any>;
+  clusterStatus: Record<string, any>;
 }
 
 export interface AppNotification {

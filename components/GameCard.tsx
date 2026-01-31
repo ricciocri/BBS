@@ -48,8 +48,8 @@ const GameCard: React.FC<GameCardProps> = ({
 
   const isJoined = isTable && currentUser ? table!.currentPlayers.some(p => p.id === currentUser.id) : false;
   const isHost = isTable && currentUser && table ? table.hostId === currentUser.id : false;
-  const isFull = isTable ? table!.currentPlayers.length >= table!.maxPlayers : proposal!.interestedPlayerIds.length >= proposal!.maxPlayersGoal;
-  const isInterested = !isTable && currentUser ? proposal!.interestedPlayerIds.includes(currentUser.id) : false;
+  const isFull = isTable && table!.currentPlayers.length >= table!.maxPlayers;
+  const isInterested = !isTable && currentUser ? (proposal!.interestedPlayerIds || []).includes(currentUser.id) : false;
   const isProposer = !isTable && currentUser ? proposal!.proposer.id === currentUser.id : false;
 
   const canManage = (isTable && isHost) || (!isTable && isProposer);
@@ -142,11 +142,24 @@ const GameCard: React.FC<GameCardProps> = ({
         </div>
 
         <div className="flex flex-col items-center justify-center px-3 md:px-4 border-l border-white/5 h-10 shrink-0 min-w-[50px]">
-           <span className="text-[7px] font-black text-slate-500 uppercase tracking-tighter">Posti</span>
-           <span className={`text-[11px] font-black ${isFull ? 'text-amber-400' : 'text-white'}`}>
-            {isTable ? `${table!.currentPlayers.length}/${table!.maxPlayers}` : `${proposal!.interestedPlayerIds.length}/${proposal!.maxPlayersGoal}`}
+           <span className="text-[7px] font-black text-slate-500 uppercase tracking-tighter">
+             {isTable ? 'Posti' : 'Interessati'}
+           </span>
+           <span className={`text-[11px] font-black ${isTable && isFull ? 'text-amber-400' : 'text-white'}`}>
+            {isTable ? `${table!.currentPlayers.length}/${table!.maxPlayers}` : `${(proposal!.interestedPlayerIds || []).length}`}
            </span>
         </div>
+
+        {!isTable && (
+          <div className="flex flex-col items-center justify-center px-3 md:px-4 border-l border-white/5 h-10 shrink-0 min-w-[50px]">
+             <span className="text-[7px] font-black text-slate-500 uppercase tracking-tighter">
+               Bozze
+             </span>
+             <span className="text-[11px] font-black text-amber-500/80">
+               {proposal!.drafts?.length || 0}
+             </span>
+          </div>
+        )}
 
         <div className="flex items-center gap-2 pr-1 shrink-0">
           {isTable ? (
@@ -195,9 +208,11 @@ const GameCard: React.FC<GameCardProps> = ({
           <button onClick={(e) => { e.stopPropagation(); onPrimaryAction(proposal!.id); }} className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all border ${isInterested ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-lg shadow-amber-500/20' : 'bg-slate-900/60 border-slate-700 text-slate-400 hover:text-white'}`}>
             <i className={`fa-${isInterested ? 'solid' : 'regular'} fa-star text-xs`}></i>
           </button>
-          <button onClick={(e) => { e.stopPropagation(); onSecondaryAction && onSecondaryAction(proposal!.id); }} className="px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest bg-indigo-600 hover:bg-indigo-500 text-white transition-all shadow-xl shadow-indigo-600/20 border border-indigo-400/30">
-            APRI
-          </button>
+          {isInterested && (
+            <button onClick={(e) => { e.stopPropagation(); onSecondaryAction && onSecondaryAction(proposal!.id); }} className="px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest bg-indigo-600 hover:bg-indigo-500 text-white transition-all shadow-xl shadow-indigo-600/20 border border-indigo-400/30">
+              APRI
+            </button>
+          )}
         </div>
       )}
     </div>
@@ -284,16 +299,34 @@ const GameCard: React.FC<GameCardProps> = ({
 
           <div className="flex items-center gap-3">
             <div className="flex -space-x-1.5">
-              {(isTable ? table!.currentPlayers : allUsers.filter(u => proposal!.interestedPlayerIds.includes(u.id))).slice(0, 3).map((p) => (
+              {(isTable ? table!.currentPlayers : allUsers.filter(u => (proposal!.interestedPlayerIds || []).includes(u.id))).slice(0, 3).map((p) => (
                 <img key={p.id} src={p.avatar} onClick={(e) => { e.stopPropagation(); onSelectMember(p.id); }} className="w-6 h-6 rounded-full border border-slate-900 object-cover cursor-pointer hover:z-10 shadow-sm" alt={p.name} />
               ))}
             </div>
-            <div className="flex flex-col items-end">
-              <span className="text-[7px] font-black text-slate-500 uppercase tracking-tighter">Posti</span>
-              <span className={`text-xs font-black ${isFull ? 'text-amber-400' : 'text-white'}`}>
-                {isTable ? `${table!.currentPlayers.length}/${table!.maxPlayers}` : `${proposal!.interestedPlayerIds.length}/${proposal!.maxPlayersGoal}`}
-              </span>
+            
+            <div className="flex items-center gap-3">
+              <div className="flex flex-col items-end">
+                <span className="text-[7px] font-black text-slate-500 uppercase tracking-tighter">
+                  {isTable ? 'Posti' : 'Interessati'}
+                </span>
+                <span className={`text-xs font-black ${isTable && isFull ? 'text-amber-400' : 'text-white'}`}>
+                  {isTable ? `${table!.currentPlayers.length}/${table!.maxPlayers}` : `${(proposal!.interestedPlayerIds || []).length}`}
+                </span>
+              </div>
+              
+              {!isTable && (
+                <div className="flex flex-col items-end border-l border-white/5 pl-3">
+                  <span className="text-[7px] font-black text-slate-500 uppercase tracking-tighter">
+                    Bozze
+                  </span>
+                  <span className="text-[9px] font-black text-amber-500/80 flex items-center gap-1">
+                    <i className="fa-solid fa-layer-group text-[7px]"></i>
+                    {proposal!.drafts?.length || 0}
+                  </span>
+                </div>
+              )}
             </div>
+
             {actionButtons}
           </div>
         </div>

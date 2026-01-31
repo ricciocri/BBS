@@ -13,9 +13,8 @@ import PublicProfile from './components/PublicProfile';
 import AdminDashboard from './components/AdminDashboard';
 import NotificationsView from './components/NotificationsView';
 import GameDetailView from './components/GameDetailView';
-import { GameTable, GameProposal, View, GameType, GameFormat, Player, AppNotification, AdvancedFilterState, RankingPeriod, SortType, GroupType, CollectedGame } from './types';
+import { GameTable, GameProposal, View, GameType, GameFormat, Player, AppNotification, AdvancedFilterState, RankingPeriod, SortType, GroupType, CollectedGame, DraftTable } from './types';
 import { db } from './services/api';
-import { MOCK_USERS } from './constants';
 
 const SIMULATED_NOW = new Date('2026-01-23T08:06:00');
 const TODAY_STR = SIMULATED_NOW.toISOString().split('T')[0];
@@ -181,25 +180,36 @@ const App: React.FC = () => {
     if (prop) {
       const isAlreadyInterested = prop.interestedPlayerIds.includes(currentUser.id);
       
-      // Update userPreferences to stay in sync with interestedPlayerIds
-      const newUserPreferences = { ...prop.userPreferences };
-      if (isAlreadyInterested) {
-        delete newUserPreferences[currentUser.id];
-      } else {
-        newUserPreferences[currentUser.id] = { gameName: prop.gameName };
-      }
+      // Update both interestedPlayerIds and userPreferences to keep them in sync
+      let updatedInterested: string[];
+      let updatedPrefs: Record<string, any> = { ...prop.userPreferences };
 
-      const updatedInterested = isAlreadyInterested 
-        ? prop.interestedPlayerIds.filter(uid => uid !== currentUser.id)
-        : [...prop.interestedPlayerIds, currentUser.id];
+      if (isAlreadyInterested) {
+        updatedInterested = prop.interestedPlayerIds.filter(uid => uid !== currentUser.id);
+        delete updatedPrefs[currentUser.id];
+      } else {
+        updatedInterested = [...prop.interestedPlayerIds, currentUser.id];
+        updatedPrefs[currentUser.id] = { gameName: prop.gameName };
+      }
       
       const updatedProp = { 
         ...prop, 
         interestedPlayerIds: updatedInterested,
-        userPreferences: newUserPreferences
+        userPreferences: updatedPrefs
       };
       await db.saveProposal(updatedProp);
       setProposals(prev => prev.map(p => p.id === id ? updatedProp : p));
+    }
+    setIsSyncing(false);
+  };
+
+  const handleUpdateProposalDrafts = async (proposalId: string, updatedDrafts: DraftTable[]) => {
+    setIsSyncing(true);
+    const prop = proposals.find(p => p.id === proposalId);
+    if (prop) {
+      const updatedProp = { ...prop, drafts: updatedDrafts };
+      await db.saveProposal(updatedProp);
+      setProposals(prev => prev.map(p => p.id === proposalId ? updatedProp : p));
     }
     setIsSyncing(false);
   };
@@ -274,7 +284,7 @@ const App: React.FC = () => {
     setIsSyncing(false);
   };
 
-  const handleCreateProposal = async (formData: Omit<GameProposal, 'id' | 'interestedPlayerIds' | 'createdAt' | 'proposer' | 'userPreferences' | 'clusterStatus'>) => {
+  const handleCreateProposal = async (formData: Omit<GameProposal, 'id' | 'interestedPlayerIds' | 'createdAt' | 'proposer' | 'drafts' | 'userPreferences' | 'clusterStatus'>) => {
     if (!currentUser) return;
     setIsSyncing(true);
 
@@ -292,9 +302,10 @@ const App: React.FC = () => {
         id: Date.now().toString(),
         proposer: currentUser,
         interestedPlayerIds: [currentUser.id],
+        drafts: [],
+        createdAt: SIMULATED_NOW.toISOString(),
         userPreferences: { [currentUser.id]: { gameName: formData.gameName } },
-        clusterStatus: {},
-        createdAt: SIMULATED_NOW.toISOString()
+        clusterStatus: {}
       };
       await db.saveProposal(newProp);
       setProposals(prev => [newProp, ...prev]);
@@ -357,12 +368,7 @@ const App: React.FC = () => {
       const matchesJoined = !advancedFilters.showOnlyJoined || (currentUser && t.currentPlayers.some(p => p.id === currentUser.id));
       const matchesLocation = !advancedFilters.locationSearch || t.location.toLowerCase().includes(advancedFilters.locationSearch.toLowerCase());
       const matchesDate = !advancedFilters.dateFrom || t.date >= advancedFilters.dateFrom;
-      
-      const matchesNew = !advancedFilters.showOnlyNew || (() => {
-        const created = new Date(t.createdAt).getTime();
-        return (SIMULATED_NOW.getTime() - created) < 24 * 60 * 60 * 1000;
-      })();
-
+      const matchesNew = !advancedFilters.showOnlyNew || ((SIMULATED_NOW.getTime() - new Date(t.createdAt).getTime()) < 24 * 60 * 60 * 1000);
       return matchesSearch && matchesType && matchesFormat && matchesJoined && matchesLocation && matchesDate && matchesNew && (t.date >= TODAY_STR);
     });
     if (sortOption === 'creation') result.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
@@ -391,12 +397,7 @@ const App: React.FC = () => {
       const matchesMyProp = !advancedFilters.showOnlyMyProposals || (currentUser && p.proposer?.id === currentUser.id);
       const matchesJoined = !advancedFilters.showOnlyJoined || (currentUser && p.interestedPlayerIds.includes(currentUser.id));
       const matchesFormat = advancedFilters.formatFilter === 'all' || (advancedFilters.formatFilter === 'campaign' && p.format === GameFormat.CAMPAIGN) || (advancedFilters.formatFilter === 'single' && p.format === GameFormat.SINGLE_PLAY) || (advancedFilters.formatFilter === 'tournament' && p.format === GameFormat.TOURNAMENT);
-      
-      const matchesNew = !advancedFilters.showOnlyNew || (() => {
-        const created = new Date(p.createdAt).getTime();
-        return (SIMULATED_NOW.getTime() - created) < 24 * 60 * 60 * 1000;
-      })();
-
+      const matchesNew = !advancedFilters.showOnlyNew || ((SIMULATED_NOW.getTime() - new Date(p.createdAt).getTime()) < 24 * 60 * 60 * 1000);
       return matchesSearch && matchesType && matchesMyProp && matchesJoined && matchesFormat && matchesNew;
     });
     result.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
@@ -539,9 +540,7 @@ const App: React.FC = () => {
                           index={proposals.length - proposals.findIndex(p => p.id === proposal.id)}
                           onPrimaryAction={handleToggleInterest} 
                           onSecondaryAction={(id) => { 
-                            if (!currentUser) { setIsAuthModalOpen(true); return; }
-                            const p = proposals.find(pr => pr.id === id); 
-                            if(p) { setPrefilledPlayers(allUsers.filter(u => p.interestedPlayerIds.includes(u.id))); setEditingTable(p); setView('create'); }
+                            setSelectedProposalId(id); setView('proposal-detail');
                           }}
                           onEdit={(p) => { setEditingProposal(p); setView('edit-proposal'); }}
                           onDelete={handleDeleteProposal}
@@ -564,6 +563,8 @@ const App: React.FC = () => {
             onEdit={(t) => { setEditingTable(t); setView('edit'); }}
             onSelectMember={(id) => { setSelectedUserId(id); setView('profile'); }}
             onDelete={handleDeleteTable}
+            onUpdateDrafts={() => {}}
+            onConfirmDraft={() => {}}
           />
         )}
 
@@ -574,6 +575,20 @@ const App: React.FC = () => {
             onEdit={(p) => { setEditingProposal(p); setView('edit-proposal'); }}
             onSelectMember={(id) => { setSelectedUserId(id); setView('profile'); }}
             onDelete={handleDeleteProposal}
+            onUpdateDrafts={handleUpdateProposalDrafts}
+            onConfirmDraft={(draft) => {
+              if (!currentUser) { setIsAuthModalOpen(true); return; }
+              const p = proposals.find(pr => pr.id === selectedProposalId);
+              if (p) {
+                setPrefilledPlayers(allUsers.filter(u => draft.joinedUserIds.includes(u.id)));
+                setEditingTable({
+                  ...p,
+                  ...draft,
+                  title: draft.gameName || p.gameName
+                });
+                setView('create');
+              }
+            }}
           />
         )}
 
