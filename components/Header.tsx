@@ -142,79 +142,100 @@ const Header: React.FC<HeaderProps> = ({
         }}
         className="sticky top-4 z-50 px-4 max-w-7xl mx-auto transition-all duration-500 ease-out will-change-transform"
       >
-        <div className="glass shadow-2xl border border-white/10 flex flex-col rounded-[2rem] transform-gpu overflow-visible">
-          {/* ROW 1: BRAND */}
-          <div className="flex items-center justify-center py-4 bg-slate-900/50 backdrop-blur-xl border-b border-white/10 relative overflow-hidden rounded-t-[2rem]">
-            <div className="flex items-center gap-3 cursor-pointer group px-4" onClick={onHomeClick}>
-              <h1 className="text-base sm:text-xl md:text-2xl font-fantasy font-black tracking-tighter bg-gradient-to-r from-indigo-400 via-white to-emerald-400 bg-clip-text text-transparent uppercase leading-none drop-shadow-[0_0_15px_rgba(99,102,241,0.2)] group-hover:drop-shadow-[0_0_20px_rgba(52,211,153,0.3)] transition-all duration-500 whitespace-nowrap overflow-hidden text-center">
+        <div className="glass shadow-2xl border border-white/10 flex flex-col rounded-[2.5rem] transform-gpu overflow-hidden">
+          
+          {/* ROW 1: BRAND (CENTERED) */}
+          <div className="flex items-center justify-center py-4 bg-slate-900/50 backdrop-blur-xl border-b border-white/10 relative">
+            <div className="cursor-pointer group px-4" onClick={onHomeClick}>
+              <h1 className="text-lg sm:text-2xl md:text-3xl font-fantasy font-black tracking-tighter bg-gradient-to-r from-indigo-400 via-white to-emerald-400 bg-clip-text text-transparent uppercase leading-none drop-shadow-[0_0_15px_rgba(99,102,241,0.2)] group-hover:drop-shadow-[0_0_20px_rgba(52,211,153,0.3)] transition-all duration-500 whitespace-nowrap overflow-hidden text-center">
                 Bologna Boardgame Society
               </h1>
             </div>
           </div>
 
-          {/* ROW 2: PROFILE DASHBOARD */}
-          <div className="flex items-center justify-between px-4 md:px-8 py-3 bg-slate-950/40 backdrop-blur-md border-b border-white/10 relative overflow-hidden">
-             <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/5 via-transparent to-emerald-500/5 pointer-events-none"></div>
-             
-             <div className="flex items-center gap-4 relative z-10">
-               {user ? (
-                 <>
-                   <div 
-                    className="shrink-0 flex items-center gap-3 bg-slate-900/60 px-4 py-2 rounded-xl border border-indigo-500/30 cursor-pointer hover:bg-slate-800/80 transition-all shadow-lg"
-                    onClick={() => onProfileClick(user.id)}
-                  >
-                    <img src={user.avatar} className="w-8 h-8 rounded-lg object-cover border border-white/20 shadow-md" alt={user.name} />
-                    <div className="flex flex-col">
-                      <span className="text-[10px] font-black text-white leading-none uppercase tracking-widest">{user.name}</span>
-                      <span className="text-[7px] font-black text-indigo-400 uppercase tracking-tighter mt-1">Area Personale</span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-6 ml-4 border-l border-white/10 pl-6">
-                    <div className="flex flex-col text-center">
-                      <span className="text-[7px] font-black text-slate-500 uppercase tracking-widest leading-none mb-1">Rank</span>
-                      <span className="text-sm font-black text-amber-400 drop-shadow-md">#{userRank || '?'}</span>
-                    </div>
-                    <div className="flex flex-col text-center">
-                      <span className="text-[7px] font-black text-slate-500 uppercase tracking-widest leading-none mb-1">XP Society</span>
-                      <span className="text-sm font-black text-indigo-400 drop-shadow-md">{userScore}</span>
-                    </div>
-                  </div>
-                 </>
-               ) : (
-                 <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] px-2 py-1">
-                   Benvenutə nella community
-                 </span>
-               )}
+          {/* ROW 2: USER DASHBOARD (PROFILE, STATS & ACTIONS) */}
+          <div className="flex items-center justify-between px-4 md:px-8 py-3 bg-slate-950/20 backdrop-blur-md border-b border-white/10 relative">
+             <div className="flex items-center gap-4">
+               <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] hidden sm:block">
+                 {user ? `Bentornatə, ${user.name}` : 'Benvenutə nella community'}
+               </span>
              </div>
 
-             <div className="flex items-center gap-3 relative z-10">
+             <div className="flex items-center gap-6">
+                {user ? (
+                  <div className="flex items-center gap-4 md:gap-8">
+                    {/* Stats Group */}
+                    <div className="flex items-center gap-4 md:gap-6">
+                      <div className="flex flex-col items-center">
+                        <span className="text-[7px] font-black text-slate-500 uppercase tracking-widest leading-none mb-1">Rank</span>
+                        <span className="text-sm font-black text-amber-400 drop-shadow-md">#{userRank || '?'}</span>
+                      </div>
+                      <div className="flex flex-col items-center border-l border-white/10 pl-4 md:pl-6">
+                        <span className="text-[7px] font-black text-slate-500 uppercase tracking-widest leading-none mb-1">XP Karma</span>
+                        <span className="text-sm font-black text-indigo-400 drop-shadow-md">{userScore}</span>
+                      </div>
+                    </div>
+                    
+                    {/* Avatar Pill */}
+                    <div 
+                      className="flex items-center gap-3 bg-slate-900/60 px-3 py-1.5 rounded-2xl border border-white/5 cursor-pointer hover:bg-slate-800/80 transition-all shadow-lg"
+                      onClick={() => onProfileClick(user.id)}
+                    >
+                      <img src={user.avatar} className="w-8 h-8 rounded-xl object-cover border border-white/20 shadow-md" alt={user.name} />
+                      <div className="hidden xs:flex flex-col">
+                        <span className="text-[10px] font-black text-white leading-none uppercase tracking-widest">{user.name}</span>
+                        <span className="text-[6px] font-black text-indigo-400 uppercase tracking-tighter mt-0.5">Area Profilo</span>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="h-8"></div> // Spacer
+                )}
+             </div>
+
+             <div className="flex items-center gap-2 md:gap-3">
                {user?.isAdmin && (
-                 <button type="button" onClick={onAdminClick} className="px-4 py-2 bg-amber-500/20 text-amber-500 border border-amber-500/30 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-amber-500/30 transition-all">
-                   <i className="fa-solid fa-shield-halved mr-2"></i>Dashboard Admin
+                 <button onClick={onAdminClick} className="px-3 py-2 bg-amber-500/20 text-amber-500 border border-amber-500/30 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-amber-500/30 transition-all">
+                   <i className="fa-solid fa-shield-halved mr-1.5"></i> Admin
                  </button>
                )}
-               {user && (
+               
+               <button 
+                onClick={onNotificationsClick}
+                className="relative w-10 h-10 rounded-xl bg-slate-800/40 border border-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-all shadow-md group"
+                title="Notifiche"
+              >
+                <i className="fa-solid fa-bell group-hover:rotate-12 transition-transform text-xs"></i>
+                {notifications.some(n => !n.read) && (
+                  <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-rose-500 rounded-full border border-slate-900 shadow-[0_0_8px_rgba(244,63,94,0.6)]"></span>
+                )}
+              </button>
+
+               {user ? (
                  <button 
-                  type="button"
                   onClick={(e) => {
                     e.preventDefault();
-                    e.stopPropagation();
-                    if (window.confirm("Sei sicuro di voler uscire?")) {
-                      onLogout();
-                    }
+                    if (window.confirm("Sei sicuro di voler uscire?")) onLogout();
                   }}
-                  className="w-11 h-11 rounded-xl bg-rose-950/20 hover:bg-rose-600/20 text-rose-400/70 hover:text-rose-400 border border-rose-500/10 hover:border-rose-500/30 transition-all flex items-center justify-center shadow-lg"
+                  className="w-10 h-10 rounded-xl bg-rose-950/20 hover:bg-rose-600/20 text-rose-400/70 hover:text-rose-400 border border-rose-500/10 hover:border-rose-500/30 transition-all flex items-center justify-center shadow-lg"
                   title="Esci"
                 >
-                  <i className="fa-solid fa-power-off text-sm"></i>
+                  <i className="fa-solid fa-power-off text-xs"></i>
+                </button>
+               ) : (
+                 <button 
+                  onClick={onAuthClick}
+                  className="px-5 h-10 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-indigo-600/20 transition-all flex items-center gap-2"
+                >
+                  <i className="fa-solid fa-right-to-bracket"></i>
+                  Accedi
                 </button>
                )}
              </div>
           </div>
 
-          {/* ROW 3: NAVIGATION MENU & UTILITIES */}
-          <div className="flex items-center justify-between px-3 md:px-6 py-2.5 bg-slate-900/40 backdrop-blur-xl gap-2 md:gap-4 rounded-b-[2rem]">
+          {/* ROW 3: NAVIGATION MENU & SYSTEM STATUS */}
+          <div className="flex items-center justify-between px-3 md:px-6 py-2.5 bg-slate-900/40 backdrop-blur-xl gap-4">
             <nav className="flex items-center gap-1.5 flex-1 overflow-x-auto no-scrollbar py-0.5">
               <button onClick={onHomeClick} className={getBtnClass(isActive('home'), 'indigo')}>
                 <i className="fa-solid fa-house"></i>
@@ -239,35 +260,12 @@ const Header: React.FC<HeaderProps> = ({
             </nav>
 
             <div className="flex items-center gap-3 shrink-0">
-              {/* Stato Sincro */}
               <div className="flex items-center px-3 py-2 bg-slate-950/60 rounded-xl border border-white/5 transition-all">
                 <div 
                   className={`w-2 h-2 rounded-full transition-all duration-500 ${isSyncing ? 'bg-amber-400 animate-pulse shadow-[0_0_8px_rgba(251,191,36,0.6)]' : 'bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]'}`}
-                  title={isSyncing ? "Trasmissione dati..." : "Server Online"}
+                  title={isSyncing ? "Sincronizzazione DB in corso..." : "Database Online"}
                 ></div>
               </div>
-
-              {/* Notifiche */}
-              <button 
-                onClick={onNotificationsClick}
-                className="relative w-10 h-10 rounded-xl bg-slate-800/40 border border-white/10 flex items-center justify-center text-slate-400 hover:text-white transition-all shadow-md group"
-              >
-                <i className="fa-solid fa-bell group-hover:rotate-12 transition-transform"></i>
-                {notifications.some(n => !n.read) && (
-                  <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-rose-500 rounded-full border border-slate-900 shadow-[0_0_8px_rgba(244,63,94,0.6)]"></span>
-                )}
-              </button>
-
-              {/* Auth Button */}
-              {!user && (
-                <button 
-                  onClick={onAuthClick}
-                  className="px-6 h-10 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-indigo-600/20 transition-all flex items-center gap-2"
-                >
-                  <i className="fa-solid fa-right-to-bracket"></i>
-                  Accedi
-                </button>
-              )}
             </div>
           </div>
         </div>
