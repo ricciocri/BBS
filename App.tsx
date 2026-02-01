@@ -631,6 +631,23 @@ const App: React.FC = () => {
                 </button>
               </div>
 
+              <AdvancedFilters 
+                mode="proposals" 
+                filters={advancedFilters} 
+                onChange={setAdvancedFilters} 
+                onReset={() => setAdvancedFilters(initialAdvancedFilters)} 
+                isVisible={showAdvanced} 
+              />
+              <FeedControls 
+                mode="proposals" 
+                sort={sortOption} 
+                group={groupOption} 
+                onSortChange={setSortOption} 
+                onGroupChange={setGroupOption} 
+                viewMode={viewMode} 
+                onViewModeChange={setViewMode} 
+              />
+
               <div className="space-y-10">
                 {(Object.entries(groupedProposals) as [string, GameProposal[]][]).map(([groupKey, groupItems], gIdx) => (
                   <div 
