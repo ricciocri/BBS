@@ -183,7 +183,7 @@ const Header: React.FC<HeaderProps> = ({
                  </>
                ) : (
                  <span className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] px-2 py-1">
-                   Benvenut3 nella Society
+                   Benvenutə nella community
                  </span>
                )}
              </div>

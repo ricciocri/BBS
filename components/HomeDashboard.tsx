@@ -45,11 +45,10 @@ const HomeDashboard: React.FC<HomeDashboardProps> = ({
         <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
           <div className="text-center md:text-left space-y-4">
             <h2 className="text-3xl md:text-5xl font-fantasy font-black text-white tracking-tight">
-              {currentUser ? `Bentornat3, ${currentUser.name}!` : 'Benvenut3 nella Community'}
+              {currentUser ? `Bentornatə nella community, ${currentUser.name}!` : 'Benvenutə nella community'}
             </h2>
             <p className="text-slate-400 text-sm md:text-lg max-w-xl leading-relaxed">
-              La Bologna Boardgame Society è il cuore pulsante del gioco analogico sotto le due torri. 
-              Scopri tavoli pronti, lancia nuove idee e scala il ranking dei Master.
+              Bologna Boardgame Society è il cuore pulsante del gioco analogico. Scopri tavoli pronti, lancia nuove idee e scala il ranking dei giocatori.
             </p>
             <div className="flex flex-wrap justify-center md:justify-start gap-4 pt-4">
               <button onClick={onExploreTables} className="px-8 py-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-indigo-600/30 transition-all active:scale-95">
@@ -74,7 +73,7 @@ const HomeDashboard: React.FC<HomeDashboardProps> = ({
         <div className="flex items-center justify-between px-4">
           <h3 className="text-sm font-black uppercase tracking-[0.3em] text-white flex items-center gap-3">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.6)]"></span>
-            Stasera nella Community
+            Benvenut3 nella community
           </h3>
           <button onClick={onExploreTables} className="text-[10px] font-black text-indigo-400 hover:text-white uppercase tracking-widest transition-colors">
             Vedi tutti ({tables.length})

@@ -44,7 +44,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onLogin }) => {
       <div className="glass w-full max-w-md rounded-3xl p-8 border border-slate-700/50 shadow-2xl animate-in zoom-in-95 duration-300">
         <div className="flex justify-between items-center mb-8">
           <h2 className="text-2xl font-bold font-fantasy text-white">
-            {isLogin ? 'Bentornato!' : 'Unisciti alla BBS'}
+            {isLogin ? 'Bentornato!' : 'Benvenut3 nella community'}
           </h2>
           <button onClick={onClose} className="text-slate-400 hover:text-white transition-colors">
             <i className="fa-solid fa-xmark text-xl"></i>

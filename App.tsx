@@ -486,7 +486,7 @@ const App: React.FC = () => {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-white">
         <div className="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-        <p className="font-fantasy text-xl animate-pulse">Connessione alla Community...</p>
+        <p className="font-fantasy text-xl animate-pulse">Connessione alla community...</p>
       </div>
     );
   }
