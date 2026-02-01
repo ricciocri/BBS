@@ -599,7 +599,6 @@ const App: React.FC = () => {
                     {groupItems.map((table) => (
                       <GameCard 
                         key={table.id} type="table" data={table} currentUser={currentUser} userRanks={userRanks} allUsers={allUsers} 
-                        index={tables.length - tables.findIndex(t => t.id === table.id)}
                         onPrimaryAction={handleJoinTable} 
                         onEdit={(t) => { setEditingTable(t); setView('edit'); }} 
                         onDelete={handleDeleteTable}
@@ -650,7 +649,6 @@ const App: React.FC = () => {
                       {groupItems.map((proposal) => (
                         <GameCard 
                           key={proposal.id} type="proposal" data={proposal} currentUser={currentUser} userRanks={userRanks} allUsers={allUsers} 
-                          index={proposals.length - proposals.findIndex(p => p.id === proposal.id)}
                           onPrimaryAction={handleToggleInterest} 
                           onSecondaryAction={(id) => { 
                             setSelectedProposalId(id); setView('proposal-detail');

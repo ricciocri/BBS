@@ -14,7 +14,6 @@ interface GameCardProps {
   onDelete: (id: string) => void;
   onSelectMember: (userId: string) => void;
   onViewDetail: (data: any) => void;
-  index: number;
   viewMode?: 'grid' | 'compact';
   lastVisitBoundary: string;
 }
@@ -31,7 +30,6 @@ const GameCard: React.FC<GameCardProps> = ({
   onDelete,
   onSelectMember,
   onViewDetail,
-  index,
   viewMode = 'grid',
   lastVisitBoundary
 }) => {
@@ -88,10 +86,6 @@ const GameCard: React.FC<GameCardProps> = ({
         onClick={() => onViewDetail(data)}
         className={`group relative min-h-[70px] py-2 flex flex-row items-center gap-3 md:gap-4 px-4 bg-slate-900/80 backdrop-blur-md border border-slate-800 rounded-xl transition-all duration-300 hover:border-${themeColor}-500/50 hover:bg-slate-800/90 cursor-pointer overflow-hidden`}
       >
-        <span className="w-8 h-8 shrink-0 rounded-lg bg-slate-950/60 border border-white/5 flex items-center justify-center text-[9px] font-black text-slate-500">
-          #{index}
-        </span>
-
         <div className="flex flex-col min-w-0 flex-1 py-1">
           <div className="flex items-center gap-2">
             <a 
@@ -226,9 +220,6 @@ const GameCard: React.FC<GameCardProps> = ({
       <div className="relative z-10 p-5 flex-1 flex flex-col gap-4">
         <div className="flex items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="w-8 h-8 rounded-lg bg-slate-950/60 backdrop-blur-md border border-white/10 flex items-center justify-center text-[10px] font-black text-slate-400">
-              #{index}
-            </span>
             {isNew && (
               <span className="px-2 py-1 rounded-lg bg-red-600 text-white text-[8px] font-black uppercase tracking-widest animate-pulse shadow-lg">
                 NEW

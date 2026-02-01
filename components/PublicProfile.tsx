@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Player, GameTable, GameProposal, CollectedGame, GameType } from '../types';
 import GameCard from './GameCard';
@@ -27,6 +28,7 @@ interface PublicProfileProps {
   onUpdateUser?: (user: Player) => void;
   onViewTableDetail: (table: GameTable) => void;
   onViewProposalDetail: (proposal: GameProposal) => void;
+  lastVisitBoundary: string;
 }
 
 type CollectionSortMode = 'alpha' | 'rank' | 'difficulty' | 'duration';
@@ -53,7 +55,8 @@ const PublicProfile: React.FC<PublicProfileProps> = ({
   onUpdateCollection,
   onUpdateUser,
   onViewTableDetail,
-  onViewProposalDetail
+  onViewProposalDetail,
+  lastVisitBoundary
 }) => {
   const isOwnProfile = currentUser?.id === user.id;
   const [collection, setCollection] = useState<CollectedGame[]>(user.collection || []);
@@ -495,11 +498,12 @@ const PublicProfile: React.FC<PublicProfileProps> = ({
             <SectionHeader icon="fa-crown" title="Tavoli Organizzati" count={hostedTables.length} color="amber" />
             {hostedTables.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {hostedTables.map((table, idx) => (
+                {hostedTables.map((table) => (
                   <GameCard 
                     key={table.id} type="table" data={table} currentUser={currentUser} userRanks={userRanks} allUsers={allUsers}
-                    index={idx + 1} onPrimaryAction={onJoinTable} onEdit={onViewTableDetail} onDelete={() => {}}
+                    onPrimaryAction={onJoinTable} onEdit={onViewTableDetail} onDelete={() => {}}
                     onSelectMember={onSelectMember} onViewDetail={onViewTableDetail}
+                    lastVisitBoundary={lastVisitBoundary}
                   />
                 ))}
               </div>
@@ -512,11 +516,12 @@ const PublicProfile: React.FC<PublicProfileProps> = ({
             <SectionHeader icon="fa-people-group" title="Partecipazioni" count={joinedAsPlayerTables.length} color="emerald" />
             {joinedAsPlayerTables.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {joinedAsPlayerTables.map((table, idx) => (
+                {joinedAsPlayerTables.map((table) => (
                   <GameCard 
                     key={table.id} type="table" data={table} currentUser={currentUser} userRanks={userRanks} allUsers={allUsers}
-                    index={idx + 1} onPrimaryAction={onLeaveTable} onEdit={onViewTableDetail} onDelete={() => {}}
+                    onPrimaryAction={onLeaveTable} onEdit={onViewTableDetail} onDelete={() => {}}
                     onSelectMember={onSelectMember} onViewDetail={onViewTableDetail}
+                    lastVisitBoundary={lastVisitBoundary}
                   />
                 ))}
               </div>
@@ -529,11 +534,12 @@ const PublicProfile: React.FC<PublicProfileProps> = ({
             <SectionHeader icon="fa-lightbulb" title="Proposte" count={userProposals.length} color="amber" />
             {userProposals.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {userProposals.map((prop, idx) => (
+                {userProposals.map((prop) => (
                   <GameCard 
                     key={prop.id} type="proposal" data={prop} currentUser={currentUser} userRanks={userRanks} allUsers={allUsers}
-                    index={idx + 1} onPrimaryAction={onExpressInterest} onEdit={onViewProposalDetail} onDelete={() => {}}
+                    onPrimaryAction={onExpressInterest} onEdit={onViewProposalDetail} onDelete={() => {}}
                     onSelectMember={onSelectMember} onViewDetail={onViewProposalDetail}
+                    lastVisitBoundary={lastVisitBoundary}
                   />
                 ))}
               </div>
@@ -546,11 +552,12 @@ const PublicProfile: React.FC<PublicProfileProps> = ({
             <SectionHeader icon="fa-star" title="Mi interessa" count={joinedProposals.length} color="indigo" />
             {joinedProposals.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {joinedProposals.map((prop, idx) => (
+                {joinedProposals.map((prop) => (
                   <GameCard 
                     key={prop.id} type="proposal" data={prop} currentUser={currentUser} userRanks={userRanks} allUsers={allUsers}
-                    index={idx + 1} onPrimaryAction={onExpressInterest} onEdit={onViewProposalDetail} onDelete={() => {}}
+                    onPrimaryAction={onExpressInterest} onEdit={onViewProposalDetail} onDelete={() => {}}
                     onSelectMember={onSelectMember} onViewDetail={onViewProposalDetail}
+                    lastVisitBoundary={lastVisitBoundary}
                   />
                 ))}
               </div>
