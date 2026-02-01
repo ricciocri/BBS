@@ -104,7 +104,7 @@ const GameCard: React.FC<GameCardProps> = ({
             >
               <img src={BGG_ICON_URL} className="w-full h-full object-cover transition-transform group-hover/geek:scale-110" alt="BGG" />
             </a>
-            <h3 className="text-sm font-bold text-white group-hover:text-indigo-400 transition-colors uppercase tracking-tight break-words">
+            <h3 className={`text-sm font-bold text-white ${isRPG ? 'group-hover:text-indigo-400' : 'group-hover:text-emerald-400'} transition-colors uppercase tracking-tight break-words`}>
               {data.gameName}
             </h3>
             {isNew && <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse shadow-[0_0_5px_rgba(239,68,68,0.8)]"></span>}
@@ -267,7 +267,7 @@ const GameCard: React.FC<GameCardProps> = ({
             >
               <img src={BGG_ICON_URL} className="w-full h-full object-cover transition-transform group-hover/geek:scale-110" alt="BGG" />
             </a>
-            <h3 className="text-xl md:text-2xl font-bold text-white leading-tight uppercase tracking-tight group-hover:text-indigo-400 transition-colors">
+            <h3 className={`text-xl md:text-2xl font-bold text-white leading-tight uppercase tracking-tight ${isRPG ? 'group-hover:text-indigo-400' : 'group-hover:text-emerald-400'} transition-colors`}>
               {data.gameName}
             </h3>
           </div>
