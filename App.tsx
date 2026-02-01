@@ -14,7 +14,7 @@ import AdminDashboard from './components/AdminDashboard';
 import NotificationsView from './components/NotificationsView';
 import GameDetailView from './components/GameDetailView';
 import HomeDashboard from './components/HomeDashboard';
-import { GameTable, GameProposal, View, GameType, GameFormat, Player, AppNotification, AdvancedFilterState, RankingPeriod, SortType, GroupType, CollectedGame, DraftTable } from './types';
+import { GameTable, GameProposal, View, GameType, GameFormat, Player, AppNotification, AdvancedFilterState, RankingPeriod, SortType, GroupType, CollectedGame, DraftTable, AppActivity } from './types';
 import { db } from './services/api';
 
 const SIMULATED_NOW = new Date('2026-01-23T08:06:00');
@@ -37,6 +37,7 @@ const App: React.FC = () => {
   const [tables, setTables] = useState<GameTable[]>([]);
   const [proposals, setProposals] = useState<GameProposal[]>([]);
   const [allUsers, setAllUsers] = useState<Player[]>([]);
+  const [activities, setActivities] = useState<AppActivity[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'compact'>('grid');
@@ -102,14 +103,16 @@ const App: React.FC = () => {
     const initData = async () => {
       setIsLoading(true);
       try {
-        const [t, p, u] = await Promise.all([
+        const [t, p, u, act] = await Promise.all([
           db.getTables(),
           db.getProposals(),
-          db.getUsers()
+          db.getUsers(),
+          db.getActivities()
         ]);
         setTables(t);
         setProposals(p);
         setAllUsers(u);
+        setActivities(act);
       } catch (error) {
         console.error("Errore inizializzazione dati:", error);
       } finally {
@@ -130,6 +133,22 @@ const App: React.FC = () => {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [view, selectedUserId, selectedTableId, selectedProposalId]);
+
+  const logActivity = (action: string, targetName: string, type: 'create' | 'delete' | 'update') => {
+    if (!currentUser) return;
+    const newActivity: AppActivity = {
+      id: Date.now().toString(),
+      userId: currentUser.id,
+      userName: currentUser.name,
+      userAvatar: currentUser.avatar,
+      action,
+      targetName,
+      timestamp: new Date().toISOString(),
+      type
+    };
+    db.saveActivity(newActivity).catch(console.error);
+    setActivities(prev => [newActivity, ...prev].slice(0, 50));
+  };
 
   const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -190,6 +209,7 @@ const App: React.FC = () => {
           };
           await db.saveTable(updatedTable);
           setTables(prev => prev.map(t => t.id === tableId ? updatedTable : t));
+          logActivity("ha lasciato il tavolo", table.gameName, "update");
         }
       } else {
         if (table.currentPlayers.length < table.maxPlayers) {
@@ -199,6 +219,7 @@ const App: React.FC = () => {
           };
           await db.saveTable(updatedTable);
           setTables(prev => prev.map(t => t.id === tableId ? updatedTable : t));
+          logActivity("si è unitə al tavolo", table.gameName, "update");
         } else {
           alert("Il tavolo è pieno!");
         }
@@ -229,9 +250,11 @@ const App: React.FC = () => {
           ...draft,
           joinedUserIds: draft.joinedUserIds.filter(uid => uid !== currentUser.id)
         }));
+        logActivity("ha rimosso l'interesse per", prop.gameName, "update");
       } else {
         updatedInterested = [...prop.interestedPlayerIds, currentUser.id];
         updatedPrefs[currentUser.id] = { gameName: prop.gameName };
+        logActivity("ha espresso interesse per", prop.gameName, "update");
       }
       
       const updatedProp = { 
@@ -250,6 +273,9 @@ const App: React.FC = () => {
     setIsSyncing(true);
     const prop = proposals.find(p => p.id === proposalId);
     if (prop) {
+      const oldLen = prop.drafts.length;
+      const newLen = updatedDrafts.length;
+      
       let updatedProp = { ...prop, drafts: updatedDrafts };
 
       if (currentUser) {
@@ -270,6 +296,12 @@ const App: React.FC = () => {
 
       await db.saveProposal(updatedProp);
       setProposals(prev => prev.map(p => p.id === proposalId ? updatedProp : p));
+
+      if (newLen > oldLen) {
+        logActivity("ha proposto una bozza per", prop.gameName, "create");
+      } else if (newLen < oldLen) {
+        logActivity("ha rimosso una bozza per", prop.gameName, "delete");
+      }
     }
     setIsSyncing(false);
   };
@@ -308,23 +340,26 @@ const App: React.FC = () => {
   const executeConfirmDelete = async () => {
     if (!itemToDelete) return;
 
-    const { type, id, parentId } = itemToDelete;
+    const { type, id, parentId, title } = itemToDelete;
     setIsSyncing(true);
 
     try {
       if (type === 'table') {
         await db.deleteTable(id);
         setTables(prev => prev.filter(t => t.id !== id));
+        logActivity("ha rimosso il tavolo", title, "delete");
         if (view === 'table-detail' && selectedTableId === id) setView('tables');
       } else if (type === 'proposal') {
         await db.deleteProposal(id);
         setProposals(prev => prev.filter(p => p.id !== id));
+        logActivity("ha rimosso la proposta", title, "delete");
         if (view === 'proposal-detail' && selectedProposalId === id) setView('proposals');
       } else if (type === 'draft' && parentId) {
         const prop = proposals.find(p => p.id === parentId);
         if (prop) {
           const updatedDrafts = prop.drafts.filter(d => d.id !== id);
           await handleUpdateProposalDrafts(parentId, updatedDrafts);
+          // Attività già loggata in handleUpdateProposalDrafts
         }
       }
     } catch (error) {
@@ -347,6 +382,7 @@ const App: React.FC = () => {
       };
       await db.saveTable(updatedTable);
       setTables(prev => prev.map(t => t.id === updatedTable.id ? updatedTable : t));
+      logActivity("ha modificato il tavolo", updatedTable.gameName, "update");
       setEditingTable(null);
     } else {
       const initialPlayers = prefilledPlayers 
@@ -364,6 +400,7 @@ const App: React.FC = () => {
       };
       await db.saveTable(newTable);
       setTables(prev => [newTable, ...prev]);
+      logActivity("ha aperto un nuovo tavolo", newTable.gameName, "create");
       setEditingTable(null);
     }
 
@@ -385,6 +422,7 @@ const App: React.FC = () => {
       };
       await db.saveProposal(updatedProp);
       setProposals(prev => prev.map(p => p.id === updatedProp.id ? updatedProp : p));
+      logActivity("ha modificato la proposta", updatedProp.gameName, "update");
       setEditingProposal(null);
     } else {
       const newProp: GameProposal = {
@@ -399,6 +437,7 @@ const App: React.FC = () => {
       };
       await db.saveProposal(newProp);
       setProposals(prev => [newProp, ...prev]);
+      logActivity("ha lanciato la proposta", newProp.gameName, "create");
     }
 
     if (selectedUserId) setView('profile');
@@ -554,11 +593,13 @@ const App: React.FC = () => {
             proposals={proposals}
             allUsers={allUsers}
             userStats={userStats}
+            activities={activities}
             todayStr={TODAY_STR}
             onViewTableDetail={(t) => { setSelectedTableId(t.id); setView('table-detail'); }}
             onViewProposalDetail={(p) => { setSelectedProposalId(p.id); setView('proposal-detail'); }}
             onExploreTables={() => setView('tables')}
             onExploreProposals={() => setView('proposals')}
+            onSelectMember={(id) => { setSelectedUserId(id); setView('profile'); }}
           />
         )}
 
@@ -660,28 +701,28 @@ const App: React.FC = () => {
                         <div className={`w-2 h-2 rounded-full bg-sky-500 shadow-[0_0_8px_rgba(14,165,233,0.5)]`}></div>
                         <h3 className="text-xs font-black uppercase tracking-[0.2em] text-white/70">{groupKey}</h3>
                         <div className="flex-1 h-px bg-gradient-to-r from-sky-500/40 to-transparent"></div>
-                      </div>
-                    )}
-                    <div className={viewMode === 'grid' ? "grid grid-cols-1 xl:grid-cols-2 gap-4" : "flex flex-col gap-2"}>
-                      {groupItems.map((proposal) => (
-                        <GameCard 
-                          key={proposal.id} type="proposal" data={proposal} currentUser={currentUser} userRanks={userRanks} allUsers={allUsers} 
-                          onPrimaryAction={handleToggleInterest} 
-                          onSecondaryAction={(id) => { 
-                            setSelectedProposalId(id); setView('proposal-detail');
-                          }}
-                          onEdit={(p) => { setEditingProposal(p); setView('edit-proposal'); }}
-                          onDelete={handleDeleteProposal}
-                          onSelectMember={(id) => { setSelectedUserId(id); setView('profile'); }}
-                          onViewDetail={(p) => { setSelectedProposalId(p.id); setView('proposal-detail'); }}
-                          viewMode={viewMode}
-                          lastVisitBoundary={lastVisitBoundary}
-                        />
-                      ))}
                     </div>
+                  )}
+                  <div className={viewMode === 'grid' ? "grid grid-cols-1 xl:grid-cols-2 gap-4" : "flex flex-col gap-2"}>
+                    {groupItems.map((proposal) => (
+                      <GameCard 
+                        key={proposal.id} type="proposal" data={proposal} currentUser={currentUser} userRanks={userRanks} allUsers={allUsers} 
+                        onPrimaryAction={handleToggleInterest} 
+                        onSecondaryAction={(id) => { 
+                          setSelectedProposalId(id); setView('proposal-detail');
+                        }}
+                        onEdit={(p) => { setEditingProposal(p); setView('edit-proposal'); }}
+                        onDelete={handleDeleteProposal}
+                        onSelectMember={(id) => { setSelectedUserId(id); setView('profile'); }}
+                        onViewDetail={(p) => { setSelectedProposalId(p.id); setView('proposal-detail'); }}
+                        viewMode={viewMode}
+                        lastVisitBoundary={lastVisitBoundary}
+                      />
+                    ))}
                   </div>
-                ))}
-              </div>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 

@@ -15,6 +15,20 @@ export type SortType = 'session' | 'creation';
 export type GroupType = 'none' | 'day' | 'week' | 'month' | 'year' | 'game';
 
 /**
+ * Audit Log activity entry
+ */
+export interface AppActivity {
+  id: string;
+  userId: string;
+  userName: string;
+  userAvatar: string;
+  action: string;
+  targetName: string;
+  timestamp: string;
+  type: 'create' | 'delete' | 'update';
+}
+
+/**
  * DraftTable represents a specific logistic configuration proposed by a user
  * within a persistent GameProposal hub.
  */

@@ -1,6 +1,6 @@
 
-import React from 'react';
-import { GameTable, GameProposal, Player } from '../types';
+import React, { useState, useMemo } from 'react';
+import { GameTable, GameProposal, Player, AppActivity } from '../types';
 
 interface HomeDashboardProps {
   currentUser: Player | null;
@@ -8,10 +8,12 @@ interface HomeDashboardProps {
   proposals: GameProposal[];
   allUsers: Player[];
   userStats: Record<string, { rank: number, score: number }>;
+  activities: AppActivity[];
   onViewTableDetail: (t: GameTable) => void;
   onViewProposalDetail: (p: GameProposal) => void;
   onExploreTables: () => void;
   onExploreProposals: () => void;
+  onSelectMember: (id: string) => void;
   todayStr: string;
 }
 
@@ -21,12 +23,16 @@ const HomeDashboard: React.FC<HomeDashboardProps> = ({
   proposals, 
   allUsers, 
   userStats,
+  activities,
   onViewTableDetail,
   onViewProposalDetail,
   onExploreTables,
   onExploreProposals,
+  onSelectMember,
   todayStr
 }) => {
+  const [activityView, setActivityView] = useState<'chrono' | 'account'>('chrono');
+
   const activeTonight = tables.filter(t => t.date === todayStr);
   const hypeProposal = proposals.length > 0 
     ? [...proposals].sort((a, b) => (b.interestedPlayerIds?.length || 0) - (a.interestedPlayerIds?.length || 0))[0]
@@ -36,6 +42,28 @@ const HomeDashboard: React.FC<HomeDashboardProps> = ({
     .map(u => ({ ...u, score: userStats[u.id]?.score || 0 }))
     .sort((a, b) => b.score - a.score)
     .slice(0, 3);
+
+  const formatRelativeTime = (timestamp: string) => {
+    const now = new Date();
+    const then = new Date(timestamp);
+    const diffInSeconds = Math.floor((now.getTime() - then.getTime()) / 1000);
+    
+    if (diffInSeconds < 60) return "proprio ora";
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m fa`;
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h fa`;
+    return then.toLocaleDateString('it-IT', { day: 'numeric', month: 'short' });
+  };
+
+  const groupedActivities = useMemo(() => {
+    if (activityView === 'chrono') return activities;
+    
+    const groups: Record<string, AppActivity[]> = {};
+    activities.forEach(act => {
+      if (!groups[act.userId]) groups[act.userId] = [];
+      groups[act.userId].push(act);
+    });
+    return Object.entries(groups).sort((a, b) => b[1][0].timestamp.localeCompare(a[1][0].timestamp));
+  }, [activities, activityView]);
 
   return (
     <div className="space-y-12 animate-in fade-in duration-700">
@@ -68,12 +96,80 @@ const HomeDashboard: React.FC<HomeDashboardProps> = ({
         </div>
       </section>
 
+      {/* SECTION: SOCIETY LIVE FEED */}
+      <section className="space-y-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center px-4 gap-4">
+          <div className="space-y-1">
+            <h3 className="text-sm font-black uppercase tracking-[0.3em] text-white flex items-center gap-3">
+              <i className="fa-solid fa-satellite-dish text-indigo-400 animate-pulse"></i>
+              Society Live Feed
+            </h3>
+            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Le ultime attività della gilda in tempo reale</p>
+          </div>
+          
+          <div className="flex bg-slate-900/50 p-1 rounded-xl border border-slate-800">
+            <button 
+              onClick={() => setActivityView('chrono')}
+              className={`px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all ${activityView === 'chrono' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
+            >
+              Cronologia
+            </button>
+            <button 
+              onClick={() => setActivityView('account')}
+              className={`px-4 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-wider transition-all ${activityView === 'account' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-500 hover:text-slate-300'}`}
+            >
+              Per Account
+            </button>
+          </div>
+        </div>
+
+        <div className="glass rounded-[2rem] border border-slate-800 overflow-hidden shadow-xl">
+          <div className="max-h-[300px] overflow-y-auto no-scrollbar divide-y divide-white/5">
+            {activities.length > 0 ? (
+              activityView === 'chrono' ? (
+                (groupedActivities as AppActivity[]).map((act) => (
+                  <ActivityRow key={act.id} act={act} formatTime={formatRelativeTime} onSelectMember={onSelectMember} />
+                ))
+              ) : (
+                (groupedActivities as [string, AppActivity[]][]).map(([userId, userActs]) => (
+                  <div key={userId} className="p-4 space-y-3">
+                    <div className="flex items-center gap-3 px-2">
+                       <img src={userActs[0].userAvatar} className="w-6 h-6 rounded-lg object-cover border border-white/10" alt="" />
+                       <span className="text-[10px] font-black text-indigo-400 uppercase tracking-widest">{userActs[0].userName}</span>
+                       <div className="flex-1 h-px bg-white/5"></div>
+                    </div>
+                    <div className="space-y-1">
+                      {userActs.map(act => (
+                        <div key={act.id} className="flex items-center justify-between py-1 px-4 hover:bg-white/5 rounded-lg transition-colors group">
+                           <div className="flex items-center gap-3">
+                              <i className={`fa-solid ${act.type === 'delete' ? 'fa-circle-xmark text-rose-500' : act.type === 'create' ? 'fa-circle-plus text-emerald-500' : 'fa-circle-check text-amber-500'} text-[10px]`}></i>
+                              <p className="text-xs text-slate-300">
+                                {act.action} <span className="font-bold text-white tracking-tight">{act.targetName}</span>
+                              </p>
+                           </div>
+                           <span className="text-[8px] font-black text-slate-600 uppercase group-hover:text-slate-400 transition-colors">{formatRelativeTime(act.timestamp)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))
+              )
+            ) : (
+              <div className="py-12 text-center">
+                <i className="fa-solid fa-ghost text-3xl text-slate-800 mb-4"></i>
+                <p className="text-slate-600 text-[10px] font-black uppercase tracking-widest">Ancora nessuna attività registrata</p>
+              </div>
+            )}
+          </div>
+        </div>
+      </section>
+
       {/* SECTION 2: STASERA IN COMMUNITY */}
       <section className="space-y-6">
         <div className="flex items-center justify-between px-4">
           <h3 className="text-sm font-black uppercase tracking-[0.3em] text-white flex items-center gap-3">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.6)]"></span>
-            Benvenut3 nella community
+            Stasera in Community
           </h3>
           <button onClick={onExploreTables} className="text-[10px] font-black text-indigo-400 hover:text-white uppercase tracking-widest transition-colors">
             Vedi tutti ({tables.length})
@@ -177,6 +273,44 @@ const HomeDashboard: React.FC<HomeDashboardProps> = ({
             ))}
           </div>
         </div>
+      </div>
+    </div>
+  );
+};
+
+const ActivityRow: React.FC<{ act: AppActivity, formatTime: (t: string) => string, onSelectMember: (id: string) => void }> = ({ act, formatTime, onSelectMember }) => {
+  const icon = act.type === 'create' ? 'fa-circle-plus text-emerald-500' : act.type === 'delete' ? 'fa-circle-xmark text-rose-500' : 'fa-circle-check text-amber-500';
+  
+  return (
+    <div className="flex items-center justify-between p-4 hover:bg-white/5 transition-all group">
+      <div className="flex items-center gap-4 min-w-0">
+        <img 
+          src={act.userAvatar} 
+          onClick={() => onSelectMember(act.userId)}
+          className="w-10 h-10 rounded-xl object-cover border border-white/10 cursor-pointer hover:border-indigo-500 transition-all shadow-md" 
+          alt="" 
+        />
+        <div className="min-w-0">
+          <p className="text-xs md:text-sm text-slate-300 leading-tight">
+            <span 
+              onClick={() => onSelectMember(act.userId)}
+              className="font-bold text-white cursor-pointer hover:text-indigo-400 transition-colors uppercase tracking-tight"
+            >
+              {act.userName}
+            </span>
+            {" "}{act.action}{" "}
+            <span className="font-black text-white italic tracking-tight">{act.targetName}</span>
+          </p>
+          <div className="flex items-center gap-2 mt-1">
+             <i className={`fa-solid ${icon} text-[8px]`}></i>
+             <span className="text-[8px] font-black text-slate-500 uppercase tracking-tighter">Attività {act.type}</span>
+          </div>
+        </div>
+      </div>
+      <div className="shrink-0 text-right">
+        <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest group-hover:text-indigo-400/70 transition-colors">
+          {formatTime(act.timestamp)}
+        </span>
       </div>
     </div>
   );

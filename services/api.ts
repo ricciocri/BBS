@@ -1,5 +1,5 @@
 
-import { GameTable, GameProposal, Player, CollectedGame } from '../types';
+import { GameTable, GameProposal, Player, CollectedGame, AppActivity } from '../types';
 import { MOCK_TABLES, MOCK_PROPOSALS, MOCK_USERS } from '../constants';
 
 const API_BASE_URL = window.location.hostname === 'localhost' 
@@ -10,7 +10,6 @@ class ApiService {
   private useFallback = false;
 
   private getStorageKey(endpoint: string) {
-    // HARD RESET: Cambiato prefisso da bbs_backup_ a bbs_v4_reset_
     return `bbs_v4_reset_${endpoint.replace(/\//g, '_')}`;
   }
 
@@ -48,12 +47,12 @@ class ApiService {
       if (cleanEndpoint === 'tables') data = MOCK_TABLES;
       else if (cleanEndpoint === 'proposals') data = MOCK_PROPOSALS;
       else if (cleanEndpoint === 'users') data = MOCK_USERS;
+      else if (cleanEndpoint === 'activities') data = [];
       else data = [];
       localStorage.setItem(storageKey, JSON.stringify(data));
     }
 
     if (method === 'GET') {
-      // Gestione get singolo o lista
       const id = endpoint.split('/')[2];
       if (id) {
         return data.find((item: any) => item.id === id) as T;
@@ -71,6 +70,12 @@ class ApiService {
       } else {
         data.push(body);
       }
+
+      // Limita le attività a 50
+      if (cleanEndpoint === 'activities' && data.length > 50) {
+        data = data.slice(-50);
+      }
+
       localStorage.setItem(storageKey, JSON.stringify(data));
       return body as T;
     }
@@ -126,6 +131,19 @@ class ApiService {
     return this.request(`/users/${user.id}`, {
       method: 'PUT',
       body: JSON.stringify(user),
+    });
+  }
+
+  // --- AUDIT LOG / ACTIVITIES ---
+  async getActivities(): Promise<AppActivity[]> {
+    const activities = await this.request<AppActivity[]>('/activities');
+    return activities.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+  }
+
+  async saveActivity(activity: AppActivity): Promise<void> {
+    return this.request(`/activities/${activity.id}`, {
+      method: 'PUT',
+      body: JSON.stringify(activity),
     });
   }
 }
