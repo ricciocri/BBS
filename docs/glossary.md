@@ -1,3 +1,4 @@
+
 # Glossario Tecnico e Funzionale BBS
 
 Benvenuti nel documento di riferimento terminologico della **Bologna Boardgame Society (BBS)**. Questo glossario garantisce la coerenza tra il linguaggio parlato dai membri della community, le interfacce utente (UI) e il codice sorgente (TypeScript).
@@ -52,6 +53,7 @@ Alcuni termini utilizzati nell'applicazione non appartengono chiaramente ai grup
 | **Pitch IA** | Tool di generazione automatica delle descrizioni tramite Gemini. | **AI Orchestration** | Rappresenta un servizio esterno di supporto alla creazione di contenuti. |
 | **Focus Mode** | Funzionalità di UI (Pin Header) per nascondere l'interfaccia durante lo scroll. | **UI/UX Framework** | È una preferenza di visualizzazione pura, slegata dal dominio ludico. |
 | **Sincronizzazione** | Indicatore di stato del collegamento tra client (LocalStorage) e server (API). | **Infrastruttura** | Gestisce la persistenza del dato e la resilienza offline-first. |
+| **Community BBS** | Riferimento alla pianificazione e attività collettive della Society. | **Core Domain** | Sostituisce il termine legacy 'Gilda'. |
 
 ### Raccomandazioni
 Per mantenere l'architettura pulita e scalabile, si suggerisce di:

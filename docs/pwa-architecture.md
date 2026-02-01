@@ -1,3 +1,4 @@
+
 # BBS PWA Architecture - Offline-First Strategy
 
 BBS (Bologna Boardgame Society) è progettata come una **Progressive Web App (PWA)** ad alte prestazioni per garantire che i giocatori possano consultare i tavoli e le proprie collezioni anche all'interno dei locali storici di Bologna (ludoteche, bar, centri sociali) dove la copertura di rete è spesso instabile.
@@ -21,4 +22,4 @@ Il cuore della resilienza di BBS risiede nel suo `ApiService`, che implementa un
 ## 🛠️ Tecnologie Utilizzate
 - **Service Workers**: (Pianificati per Q1 2026) Per il caching degli asset statici.
 - **Web Manifest**: Configurazione icone e colori del brand (#0f172a).
-- **LocalStorage API**: Utilizzata per la persistenza "demo-friendly" e offline.
+- **LocalStorage API**: Utilizzata per la persistenza "demo-friendly" e offline della community.

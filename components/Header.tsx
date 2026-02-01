@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { AppNotification, Player, View, RankingPeriod } from '../types';
 
@@ -8,6 +9,7 @@ interface HeaderProps {
   userRank?: number;
   userScore?: number;
   onHomeClick: () => void;
+  onTablesClick: () => void;
   onProposalsClick: () => void;
   onStatsClick: () => void;
   onMembersClick: () => void;
@@ -29,6 +31,7 @@ const Header: React.FC<HeaderProps> = ({
   userRank,
   userScore = 0,
   onHomeClick, 
+  onTablesClick,
   onProposalsClick,
   onStatsClick,
   onMembersClick,
@@ -93,9 +96,6 @@ const Header: React.FC<HeaderProps> = ({
   }, [isPinned]);
 
   const isActive = (views: View | View[]) => {
-    // Non evidenziare nulla se siamo nella vista home (default)
-    if (currentView === 'home') return false;
-
     if (Array.isArray(views)) return views.includes(currentView);
     return currentView === views;
   };
@@ -220,7 +220,7 @@ const Header: React.FC<HeaderProps> = ({
                 <i className="fa-solid fa-house"></i>
                 <span>Home</span>
               </button>
-              <button onClick={onHomeClick} className={getBtnClass(isActive('table-detail'), 'gradient')}>
+              <button onClick={onTablesClick} className={getBtnClass(isActive(['tables', 'table-detail']), 'gradient')}>
                 <i className="fa-solid fa-dice-six"></i>
                 <span>Tavoli</span>
               </button>

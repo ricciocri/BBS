@@ -62,7 +62,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({ tables, currentUser, onSele
             <h2 className="text-2xl font-fantasy font-bold text-white tracking-tight">
               {monthNames[currentDate.getMonth()]} {currentDate.getFullYear()}
             </h2>
-            <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Pianificazione Gilda BBS</p>
+            <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Pianificazione Community BBS</p>
           </div>
         </div>
 

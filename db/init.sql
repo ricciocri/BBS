@@ -117,7 +117,7 @@ INSERT INTO games (id, name, type, geek_id, difficulty, duration) VALUES
 
 -- Inserimento un Tavolo di esempio
 INSERT INTO game_tables (id, title, game_name, type, format, host_id, play_date, play_time, max_players, description, location, image_url, created_at) VALUES
-('t-sample-1', 'Operazione Blackout', 'Cyberpunk Red', 'RPG', 'SINGLE_PLAY', 'admin-marco', '2026-01-26', '21:00', 5, 'Infiltrazione nei server Militech.', 'La Gilda, Via de'' Gessi', 'https://images.unsplash.com/photo-1542653612-ad28247ad761?q=80', '2026-01-23 08:00:00+00');
+('t-sample-1', 'Operazione Blackout', 'Cyberpunk Red', 'RPG', 'SINGLE_PLAY', 'admin-marco', '2026-01-26', '21:00', 5, 'Infiltrazione nei server Militech.', 'Community Hub, Via de'' Gessi', 'https://images.unsplash.com/photo-1542653612-ad28247ad761?q=80', '2026-01-23 08:00:00+00');
 
 -- Collegamento partecipanti al tavolo
 INSERT INTO table_participants (table_id, player_id) VALUES 

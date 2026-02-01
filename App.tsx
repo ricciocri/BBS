@@ -13,6 +13,7 @@ import PublicProfile from './components/PublicProfile';
 import AdminDashboard from './components/AdminDashboard';
 import NotificationsView from './components/NotificationsView';
 import GameDetailView from './components/GameDetailView';
+import HomeDashboard from './components/HomeDashboard';
 import { GameTable, GameProposal, View, GameType, GameFormat, Player, AppNotification, AdvancedFilterState, RankingPeriod, SortType, GroupType, CollectedGame, DraftTable } from './types';
 import { db } from './services/api';
 
@@ -60,6 +61,13 @@ const App: React.FC = () => {
   const [editingTable, setEditingTable] = useState<Partial<GameTable> | null>(null);
   const [editingProposal, setEditingProposal] = useState<Partial<GameProposal> | null>(null);
   const [prefilledPlayers, setPrefilledPlayers] = useState<Player[] | null>(null);
+
+  const [itemToDelete, setItemToDelete] = useState<{
+    type: 'table' | 'proposal' | 'draft';
+    id: string;
+    title: string;
+    parentId?: string;
+  } | null>(null);
 
   useEffect(() => {
     const initData = async () => {
@@ -180,14 +188,22 @@ const App: React.FC = () => {
     if (prop) {
       const isAlreadyInterested = prop.interestedPlayerIds.includes(currentUser.id);
       
-      // Update both interestedPlayerIds and userPreferences to keep them in sync
       let updatedInterested: string[];
       let updatedPrefs: Record<string, any> = { ...prop.userPreferences };
+      let updatedDrafts: DraftTable[] = [...prop.drafts];
 
       if (isAlreadyInterested) {
+        // Rimozione interesse
         updatedInterested = prop.interestedPlayerIds.filter(uid => uid !== currentUser.id);
         delete updatedPrefs[currentUser.id];
+        
+        // Coerenza logica: se tolgo l'interesse esco da tutte le bozze della proposta
+        updatedDrafts = prop.drafts.map(draft => ({
+          ...draft,
+          joinedUserIds: draft.joinedUserIds.filter(uid => uid !== currentUser.id)
+        }));
       } else {
+        // Aggiunta interesse
         updatedInterested = [...prop.interestedPlayerIds, currentUser.id];
         updatedPrefs[currentUser.id] = { gameName: prop.gameName };
       }
@@ -195,7 +211,8 @@ const App: React.FC = () => {
       const updatedProp = { 
         ...prop, 
         interestedPlayerIds: updatedInterested,
-        userPreferences: updatedPrefs
+        userPreferences: updatedPrefs,
+        drafts: updatedDrafts
       };
       await db.saveProposal(updatedProp);
       setProposals(prev => prev.map(p => p.id === id ? updatedProp : p));
@@ -207,7 +224,25 @@ const App: React.FC = () => {
     setIsSyncing(true);
     const prop = proposals.find(p => p.id === proposalId);
     if (prop) {
-      const updatedProp = { ...prop, drafts: updatedDrafts };
+      let updatedProp = { ...prop, drafts: updatedDrafts };
+
+      // Automazione Workflow: Se l'utente partecipa a una bozza, gli interessa la proposta
+      if (currentUser) {
+        const isUserInAnyDraft = updatedDrafts.some(d => d.joinedUserIds.includes(currentUser.id));
+        const isAlreadyInterested = prop.interestedPlayerIds.includes(currentUser.id);
+
+        if (isUserInAnyDraft && !isAlreadyInterested) {
+          updatedProp = {
+            ...updatedProp,
+            interestedPlayerIds: [...prop.interestedPlayerIds, currentUser.id],
+            userPreferences: {
+              ...prop.userPreferences,
+              [currentUser.id]: { gameName: prop.gameName }
+            }
+          };
+        }
+      }
+
       await db.saveProposal(updatedProp);
       setProposals(prev => prev.map(p => p.id === proposalId ? updatedProp : p));
     }
@@ -218,31 +253,61 @@ const App: React.FC = () => {
     return handleJoinTable(tableId);
   };
 
-  const handleDeleteTable = async (id: string) => {
-    setIsSyncing(true);
-    try {
-      await db.deleteTable(id);
-      setTables(prev => prev.filter(t => t.id !== id));
-      if (view === 'table-detail') setView('home');
-    } catch (error) {
-      console.error("Errore eliminazione tavolo:", error);
-      alert("Errore durante l'eliminazione del tavolo.");
-    } finally {
-      setIsSyncing(false);
+  const handleDeleteTable = (id: string) => {
+    const table = tables.find(t => t.id === id);
+    if (table) {
+      setItemToDelete({ type: 'table', id, title: table.title });
     }
   };
 
-  const handleDeleteProposal = async (id: string) => {
+  const handleDeleteProposal = (id: string) => {
+    const prop = proposals.find(p => p.id === id);
+    if (prop) {
+      setItemToDelete({ type: 'proposal', id, title: prop.title });
+    }
+  };
+
+  const handleDeleteDraft = (proposalId: string, draftId: string) => {
+    const prop = proposals.find(p => p.id === proposalId);
+    const draft = prop?.drafts.find(d => d.id === draftId);
+    if (draft) {
+      setItemToDelete({ 
+        type: 'draft', 
+        id: draftId, 
+        parentId: proposalId, 
+        title: `Bozza di ${draft.gameName || prop?.gameName}` 
+      });
+    }
+  };
+
+  const executeConfirmDelete = async () => {
+    if (!itemToDelete) return;
+
+    const { type, id, parentId } = itemToDelete;
     setIsSyncing(true);
+
     try {
-      await db.deleteProposal(id);
-      setProposals(prev => prev.filter(p => p.id !== id));
-      if (view === 'proposal-detail') setView('proposals');
+      if (type === 'table') {
+        await db.deleteTable(id);
+        setTables(prev => prev.filter(t => t.id !== id));
+        if (view === 'table-detail' && selectedTableId === id) setView('tables');
+      } else if (type === 'proposal') {
+        await db.deleteProposal(id);
+        setProposals(prev => prev.filter(p => p.id !== id));
+        if (view === 'proposal-detail' && selectedProposalId === id) setView('proposals');
+      } else if (type === 'draft' && parentId) {
+        const prop = proposals.find(p => p.id === parentId);
+        if (prop) {
+          const updatedDrafts = prop.drafts.filter(d => d.id !== id);
+          await handleUpdateProposalDrafts(parentId, updatedDrafts);
+        }
+      }
     } catch (error) {
-      console.error("Errore eliminazione proposta:", error);
-      alert("Errore durante l'eliminazione della proposta.");
+      console.error("Errore eliminazione:", error);
+      alert("Errore durante l'eliminazione.");
     } finally {
       setIsSyncing(false);
+      setItemToDelete(null);
     }
   };
 
@@ -278,7 +343,7 @@ const App: React.FC = () => {
     }
 
     if (selectedUserId) setView('profile');
-    else setView('home');
+    else setView('tables');
     
     setPrefilledPlayers(null);
     setIsSyncing(false);
@@ -421,7 +486,7 @@ const App: React.FC = () => {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-white">
         <div className="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-        <p className="font-fantasy text-xl animate-pulse">Connessione alla Gilda...</p>
+        <p className="font-fantasy text-xl animate-pulse">Connessione alla Community...</p>
       </div>
     );
   }
@@ -443,6 +508,7 @@ const App: React.FC = () => {
         userRank={currentUser ? userStats[currentUser.id]?.rank : undefined}
         userScore={currentUser ? userStats[currentUser.id]?.score : undefined}
         onHomeClick={() => { setView('home'); setEditingTable(null); setSelectedUserId(null); }} 
+        onTablesClick={() => { setView('tables'); setEditingTable(null); setSelectedUserId(null); }}
         onProposalsClick={() => { setView('proposals'); setEditingProposal(null); setSelectedUserId(null); }}
         onStatsClick={() => { setView('stats'); setSelectedUserId(null); }} 
         onMembersClick={() => setView('members')}
@@ -456,6 +522,21 @@ const App: React.FC = () => {
 
       <main className="max-w-7xl mx-auto px-4 md:px-6 pb-20 pt-8">
         {view === 'home' && (
+          <HomeDashboard 
+            currentUser={currentUser}
+            tables={tables}
+            proposals={proposals}
+            allUsers={allUsers}
+            userStats={userStats}
+            todayStr={TODAY_STR}
+            onViewTableDetail={(t) => { setSelectedTableId(t.id); setView('table-detail'); }}
+            onViewProposalDetail={(p) => { setSelectedProposalId(p.id); setView('proposal-detail'); }}
+            onExploreTables={() => setView('tables')}
+            onExploreProposals={() => setView('proposals')}
+          />
+        )}
+
+        {view === 'tables' && (
           <div className="space-y-6 animate-in fade-in duration-500">
             <div className="flex flex-col md:flex-row items-center gap-4 w-full">
               <button onClick={() => { if(!currentUser) setIsAuthModalOpen(true); else setView('create'); }} className="w-full md:w-auto px-8 py-3 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-black text-[10px] uppercase tracking-widest transition-all shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-2 active:scale-95 shrink-0">
@@ -476,7 +557,11 @@ const App: React.FC = () => {
 
             <div className="space-y-10">
               {(Object.entries(groupedTables) as [string, GameTable[]][]).map(([groupKey, groupItems], gIdx) => (
-                <div key={groupKey} className="space-y-4 animate-in fade-in duration-500" style={{ animationDelay: `${gIdx * 50}ms` }}>
+                <div 
+                  key={`${viewMode}-${groupKey}-${groupItems.length}`} 
+                  className="space-y-4 animate-in fade-in zoom-in-95 duration-500" 
+                  style={{ animationDelay: `${gIdx * 100}ms` }}
+                >
                   {groupOption !== 'none' && (
                     <div className="flex items-center gap-3 px-2">
                       <div className={`w-2 h-2 rounded-full bg-sky-500 shadow-[0_0_8px_rgba(14,165,233,0.5)]`}></div>
@@ -520,12 +605,13 @@ const App: React.FC = () => {
                 </button>
               </div>
 
-              <AdvancedFilters mode="proposals" filters={advancedFilters} onChange={setAdvancedFilters} onReset={() => setAdvancedFilters(initialAdvancedFilters)} isVisible={showAdvanced} />
-              <FeedControls mode="proposals" sort={sortOption} group={groupOption} onSortChange={setSortOption} onGroupChange={setGroupOption} viewMode={viewMode} onViewModeChange={setViewMode} />
-
               <div className="space-y-10">
                 {(Object.entries(groupedProposals) as [string, GameProposal[]][]).map(([groupKey, groupItems], gIdx) => (
-                  <div key={groupKey} className="space-y-4 animate-in fade-in duration-500" style={{ animationDelay: `${gIdx * 50}ms` }}>
+                  <div 
+                    key={`${viewMode}-${groupKey}-${groupItems.length}`} 
+                    className="space-y-4 animate-in fade-in zoom-in-95 duration-500" 
+                    style={{ animationDelay: `${gIdx * 100}ms` }}
+                  >
                     {groupOption !== 'none' && (
                       <div className="flex items-center gap-3 px-2">
                         <div className={`w-2 h-2 rounded-full bg-sky-500 shadow-[0_0_8px_rgba(14,165,233,0.5)]`}></div>
@@ -559,7 +645,7 @@ const App: React.FC = () => {
         {view === 'table-detail' && selectedTableId && (
           <GameDetailView 
             type="table" data={tables.find(t => t.id === selectedTableId)!} currentUser={currentUser} userRanks={userRanks} allUsers={allUsers}
-            onBack={() => setView('home')} onPrimaryAction={handleJoinTable}
+            onBack={() => setView('tables')} onPrimaryAction={handleJoinTable}
             onEdit={(t) => { setEditingTable(t); setView('edit'); }}
             onSelectMember={(id) => { setSelectedUserId(id); setView('profile'); }}
             onDelete={handleDeleteTable}
@@ -576,6 +662,7 @@ const App: React.FC = () => {
             onSelectMember={(id) => { setSelectedUserId(id); setView('profile'); }}
             onDelete={handleDeleteProposal}
             onUpdateDrafts={handleUpdateProposalDrafts}
+            onDeleteDraft={(id) => handleDeleteDraft(selectedProposalId, id)}
             onConfirmDraft={(draft) => {
               if (!currentUser) { setIsAuthModalOpen(true); return; }
               const p = proposals.find(pr => pr.id === selectedProposalId);
@@ -618,7 +705,7 @@ const App: React.FC = () => {
           <TableForm 
             onCancel={() => { 
               if (selectedUserId) setView('profile');
-              else setView('home'); 
+              else setView('tables'); 
               setEditingTable(null); 
             }} 
             onSubmit={handleCreateTable} 
@@ -639,6 +726,34 @@ const App: React.FC = () => {
           />
         )}
       </main>
+
+      {itemToDelete && (
+        <div className="fixed inset-0 z-[300] flex items-center justify-center px-4 bg-slate-950/80 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="glass w-full max-sm rounded-[2rem] p-8 border border-red-500/30 shadow-2xl shadow-red-500/10 animate-in zoom-in-95 duration-300">
+            <div className="w-16 h-16 bg-red-500/10 border border-red-500/30 rounded-2xl flex items-center justify-center text-red-500 mx-auto mb-6">
+              <i className="fa-solid fa-trash-can text-2xl"></i>
+            </div>
+            <h3 className="text-xl font-bold text-white text-center mb-2">Conferma Eliminazione</h3>
+            <p className="text-slate-400 text-sm text-center mb-8 leading-relaxed">
+              Sei sicuro di voler eliminare definitivamente <strong className="text-white">"{itemToDelete.title}"</strong>? Questa azione non può essere annullata.
+            </p>
+            <div className="flex flex-col gap-3">
+              <button 
+                onClick={executeConfirmDelete}
+                className="w-full py-4 bg-red-600 hover:bg-red-500 text-white font-black text-xs uppercase tracking-widest rounded-2xl shadow-lg shadow-red-600/20 transition-all active:scale-95"
+              >
+                Sì, Elimina
+              </button>
+              <button 
+                onClick={() => setItemToDelete(null)}
+                className="w-full py-4 bg-slate-800 hover:bg-slate-700 text-slate-300 font-black text-xs uppercase tracking-widest rounded-2xl transition-all"
+              >
+                Annulla
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <AuthModal 
         isOpen={isAuthModalOpen} 

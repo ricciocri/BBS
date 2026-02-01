@@ -8,6 +8,7 @@ interface ProposalPlannerProps {
   currentUser: Player | null;
   allUsers: Player[];
   onUpdateDrafts: (proposalId: string, drafts: DraftTable[]) => void;
+  onDeleteDraft?: (draftId: string) => void;
   onConfirmDraft: (draft: DraftTable) => void;
   onJoinProposal: (proposalId: string) => void;
   onSelectMember: (id: string) => void;
@@ -18,6 +19,7 @@ const ProposalPlanner: React.FC<ProposalPlannerProps> = ({
   currentUser,
   allUsers,
   onUpdateDrafts,
+  onDeleteDraft,
   onConfirmDraft,
   onJoinProposal,
   onSelectMember
@@ -31,8 +33,6 @@ const ProposalPlanner: React.FC<ProposalPlannerProps> = ({
     system: '',
     maxPlayers: 4
   });
-
-  const isInterestedGeneral = currentUser && (proposal.interestedPlayerIds || []).includes(currentUser.id);
 
   const handleToggleJoinDraft = (draftId: string) => {
     if (!currentUser) return;
@@ -70,8 +70,12 @@ const ProposalPlanner: React.FC<ProposalPlannerProps> = ({
   };
 
   const handleRemoveDraft = (draftId: string) => {
-    const updatedDrafts = (proposal.drafts || []).filter(d => d.id !== draftId);
-    onUpdateDrafts(proposal.id, updatedDrafts);
+    if (onDeleteDraft) {
+      onDeleteDraft(draftId);
+    } else {
+      const updatedDrafts = (proposal.drafts || []).filter(d => d.id !== draftId);
+      onUpdateDrafts(proposal.id, updatedDrafts);
+    }
   };
 
   const draftsList = proposal.drafts || [];
@@ -88,14 +92,6 @@ const ProposalPlanner: React.FC<ProposalPlannerProps> = ({
         </div>
         
         <div className="flex items-center gap-3">
-          {!isInterestedGeneral && currentUser && (
-            <button 
-              onClick={() => onJoinProposal(proposal.id)}
-              className="px-4 py-2 bg-slate-800 text-slate-300 border border-slate-700 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-slate-700 transition-all"
-            >
-              Interesse Generale
-            </button>
-          )}
           {currentUser && (
             <button 
               onClick={() => setIsAddingDraft(!isAddingDraft)}
@@ -180,20 +176,22 @@ const ProposalPlanner: React.FC<ProposalPlannerProps> = ({
                   </div>
                   <div className="flex gap-2">
                      {canManage && (
-                        <button 
-                          onClick={() => handleRemoveDraft(draft.id)}
-                          className="w-8 h-8 rounded-xl bg-red-900/20 text-red-500 border border-red-500/20 hover:bg-red-600 hover:text-white transition-all flex items-center justify-center shadow-lg"
-                        >
-                          <i className="fa-solid fa-trash-can text-[10px]"></i>
-                        </button>
+                        <>
+                          <button 
+                            onClick={() => handleRemoveDraft(draft.id)}
+                            className="w-8 h-8 rounded-xl bg-red-900/20 text-red-500 border border-red-500/20 hover:bg-red-600 hover:text-white transition-all flex items-center justify-center shadow-lg"
+                          >
+                            <i className="fa-solid fa-trash-can text-[10px]"></i>
+                          </button>
+                          <button 
+                            onClick={() => onConfirmDraft(draft)}
+                            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-indigo-600/20 active:scale-95 transition-all flex items-center gap-2"
+                          >
+                            <i className="fa-solid fa-door-open"></i>
+                            Apri
+                          </button>
+                        </>
                      )}
-                     <button 
-                        onClick={() => onConfirmDraft(draft)}
-                        className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-indigo-600/20 active:scale-95 transition-all flex items-center gap-2"
-                      >
-                        <i className="fa-solid fa-door-open"></i>
-                        Apri
-                      </button>
                   </div>
                 </div>
 

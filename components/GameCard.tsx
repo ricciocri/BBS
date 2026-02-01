@@ -208,11 +208,6 @@ const GameCard: React.FC<GameCardProps> = ({
           <button onClick={(e) => { e.stopPropagation(); onPrimaryAction(proposal!.id); }} className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all border ${isInterested ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-lg shadow-amber-500/20' : 'bg-slate-900/60 border-slate-700 text-slate-400 hover:text-white'}`}>
             <i className={`fa-${isInterested ? 'solid' : 'regular'} fa-star text-xs`}></i>
           </button>
-          {isInterested && (
-            <button onClick={(e) => { e.stopPropagation(); onSecondaryAction && onSecondaryAction(proposal!.id); }} className="px-5 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest bg-indigo-600 hover:bg-indigo-500 text-white transition-all shadow-xl shadow-indigo-600/20 border border-indigo-400/30">
-              APRI
-            </button>
-          )}
         </div>
       )}
     </div>
@@ -250,7 +245,7 @@ const GameCard: React.FC<GameCardProps> = ({
               <button onClick={(e) => { e.stopPropagation(); onEdit(data); }} className="w-8 h-8 rounded-lg bg-slate-950/60 backdrop-blur-md hover:bg-white/10 text-white/50 hover:text-white transition-all flex items-center justify-center border border-white/10">
                 <i className="fa-solid fa-pen text-[10px]"></i>
               </button>
-              <button onClick={(e) => { e.stopPropagation(); if (window.confirm('Eliminare definitivamente?')) onDelete(data.id); }} className="w-8 h-8 rounded-lg bg-red-950/60 backdrop-blur-md hover:bg-red-600 text-red-400 hover:text-white transition-all flex items-center justify-center border border-red-500/20">
+              <button onClick={(e) => { e.stopPropagation(); onDelete(data.id); }} className="w-8 h-8 rounded-lg bg-red-950/60 backdrop-blur-md hover:bg-red-600 text-red-400 hover:text-white transition-all flex items-center justify-center border border-red-500/20">
                 <i className="fa-solid fa-trash text-[10px]"></i>
               </button>
             </div>

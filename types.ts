@@ -147,4 +147,4 @@ export interface AdvancedFilterState {
   typeFilter: 'all' | 'rpg' | 'boardgame';
 }
 
-export type View = 'home' | 'create' | 'edit' | 'stats' | 'proposals' | 'create-proposal' | 'edit-proposal' | 'members' | 'profile' | 'admin-dashboard' | 'notifications' | 'table-detail' | 'proposal-detail';
+export type View = 'home' | 'tables' | 'create' | 'edit' | 'stats' | 'proposals' | 'create-proposal' | 'edit-proposal' | 'members' | 'profile' | 'admin-dashboard' | 'notifications' | 'table-detail' | 'proposal-detail';

@@ -1,6 +1,7 @@
+
 # BBS Testing Strategy & QA
 
-La natura ibrida di BBS (Online/Offline) e l'integrazione con l'IA richiedono una strategia di testing specifica per prevenire la perdita di dati e garantire una UX fluida.
+La natura ibrida di BBS (Online/Offline) e l'integrazione con l'IA richiedono una strategia di testing specifica per prevenire la perdita di dati e garantire una UX fluida per l'intera community.
 
 ## 1. Testing della Persistenza (Offline-First)
 
@@ -44,4 +45,4 @@ Poiché l'IA è probabilistica, dobbiamo testare i "casi limite" del prompter:
 ## 5. Regressione Admin
 
 - Verificare che un utente non-admin non possa accedere all'URL o al componente `AdminDashboard`.
-- Testare l'eliminazione "Hard Delete" di un tavolo da parte di un Admin e assicurarsi che scompaia simultaneamente dalla Home di tutti gli altri client connessi.
+- Testare l'eliminazione "Hard Delete" di un tavolo da parte di un Admin e assicurarsi che scompaia simultaneamente dalla Home di tutti gli altri client connessi nella community.

@@ -1,3 +1,4 @@
+
 # BBS Roadmap - Bologna Boardgame Society
 
 Benvenuti nel piano di sviluppo di **BBS**, la piattaforma definitiva per la gestione delle community di gioco a Bologna.
@@ -27,5 +28,5 @@ Cosa è già implementato e funzionante:
 - [ ] **Export Calendario**: Sincronizzazione automatica dei tavoli con Google Calendar/iCal.
 
 ### Q3 2026: Community & Marketplace
-- [ ] **Mercatino dell'Usato**: Sezione per lo scambio/vendita di giochi tra membri della society.
+- [ ] **Mercatino dell'Usato**: Sezione per lo scambio/vendita di giochi tra membri della community.
 - [ ] **Tornei**: Modulo avanzato per la gestione di bracket e classifiche per tornei competitivi.

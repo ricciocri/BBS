@@ -16,6 +16,7 @@ interface GameDetailViewProps {
   onSelectMember: (userId: string) => void;
   onDelete?: (id: string) => Promise<void> | void;
   onUpdateDrafts: (proposalId: string, drafts: DraftTable[]) => void;
+  onDeleteDraft?: (draftId: string) => void;
   onConfirmDraft: (draft: DraftTable) => void;
 }
 
@@ -32,6 +33,7 @@ const GameDetailView: React.FC<GameDetailViewProps> = ({
   onSelectMember,
   onDelete,
   onUpdateDrafts,
+  onDeleteDraft,
   onConfirmDraft
 }) => {
   const [isDeleting, setIsDeleting] = useState(false);
@@ -107,15 +109,9 @@ const GameDetailView: React.FC<GameDetailViewProps> = ({
     return `https://${domain}/results?searchname=${encodeURIComponent(data.gameName)}`;
   };
 
-  const handleDelete = async () => {
-    if (window.confirm('Sei sicuro di voler eliminare definitivamente questo elemento?') && onDelete) {
-      setIsDeleting(true);
-      try {
-        await onDelete(data.id);
-      } catch (e) {
-        console.error("Errore durante l'eliminazione:", e);
-        setIsDeleting(false);
-      }
+  const handleDelete = () => {
+    if (onDelete) {
+      onDelete(data.id);
     }
   };
 
@@ -229,6 +225,7 @@ const GameDetailView: React.FC<GameDetailViewProps> = ({
                   currentUser={currentUser} 
                   allUsers={allUsers}
                   onUpdateDrafts={onUpdateDrafts}
+                  onDeleteDraft={onDeleteDraft}
                   onConfirmDraft={onConfirmDraft}
                   onJoinProposal={() => onPrimaryAction(proposal!.id)}
                   onSelectMember={onSelectMember}

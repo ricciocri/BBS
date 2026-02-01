@@ -120,7 +120,7 @@ export const MOCK_TABLES = [
     maxPlayers: 6,
     currentPlayers: [MOCK_USERS[0], MOCK_USERS[5], MOCK_USERS[6]],
     description: 'Una maledizione antica risale il portico più lungo del mondo. Riusciranno gli eroi a salvare la Basilica?',
-    location: 'La Gilda, Via de\' Gessi',
+    location: 'Community Hub, Via de\' Gessi',
     imageUrl: 'https://images.unsplash.com/photo-1519074063261-0b5c179758f1?q=80&w=1200&auto=format&fit=crop',
     createdAt: '2026-01-23T10:00:00Z',
     geekId: '9677'
@@ -228,7 +228,7 @@ export const MOCK_TABLES = [
     maxPlayers: 4,
     currentPlayers: [MOCK_USERS[9]],
     description: 'Ricostruisci l\'impero industriale bolognese tra canali e ferrovie.',
-    location: 'La Gilda, Via de\' Gessi',
+    location: 'Community Hub, Via de\' Gessi',
     imageUrl: 'https://cf.geekdo-images.com/itemrep/img/pic224517.jpg',
     createdAt: '2026-01-23T12:00:00Z',
     geekId: '224517'
@@ -268,7 +268,7 @@ export const MOCK_PROPOSALS: GameProposal[] = [
     createdAt: '2026-01-23T15:30:00Z',
     geekId: '193032',
     drafts: [
-      { id: 'd1-1', proposerId: 'u1', date: '2026-02-07', time: '21:00', location: 'La Gilda', joinedUserIds: ['u1', 'u2', 'u3'], maxPlayers: 5 },
+      { id: 'd1-1', proposerId: 'u1', date: '2026-02-07', time: '21:00', location: 'Community Hub', joinedUserIds: ['u1', 'u2', 'u3'], maxPlayers: 5 },
       { id: 'd1-2', proposerId: 'u4', date: '2026-02-08', time: '15:30', location: 'Centro Costa', joinedUserIds: ['u4', 'u5'], maxPlayers: 5 },
       { id: 'd1-3', proposerId: 'u6', date: '2026-02-10', time: '20:30', location: 'Bar Flora (Pratello)', joinedUserIds: ['u6', 'u7', 'u8', 'u9'], maxPlayers: 5 },
       { id: 'd1-4', proposerId: 'admin-marco', date: '2026-02-14', time: '21:15', location: 'Salaborsa', joinedUserIds: ['admin-marco', 'u10'], maxPlayers: 5 },
@@ -298,7 +298,7 @@ export const MOCK_PROPOSALS: GameProposal[] = [
     createdAt: '2026-01-23T16:00:00Z',
     geekId: '169780',
     drafts: [
-      { id: 'd2-1', proposerId: 'u15', date: '2026-02-03', time: '20:45', location: 'La Gilda', joinedUserIds: ['u15', 'admin-marco'], maxPlayers: 5 }
+      { id: 'd2-1', proposerId: 'u15', date: '2026-02-03', time: '20:45', location: 'Community Hub', joinedUserIds: ['u15', 'admin-marco'], maxPlayers: 5 }
     ],
     userPreferences: {
       'u2': { gameName: 'Scythe' },
@@ -343,7 +343,7 @@ export const MOCK_PROPOSALS: GameProposal[] = [
     geekId: '256910',
     drafts: [
       { id: 'd4-1', proposerId: 'u1', date: '2026-02-12', time: '21:30', location: 'Centro Costa', joinedUserIds: ['u1', 'u6', 'u18'], maxPlayers: 6 },
-      { id: 'd4-2', proposerId: 'admin-marco', date: '2026-02-13', time: '21:00', location: 'La Gilda', joinedUserIds: ['admin-marco'], maxPlayers: 6 }
+      { id: 'd4-2', proposerId: 'admin-marco', date: '2026-02-13', time: '21:00', location: 'Community Hub', joinedUserIds: ['admin-marco'], maxPlayers: 6 }
     ],
     userPreferences: {
       'admin-marco': { gameName: 'Vampire' },
@@ -368,7 +368,7 @@ export const MOCK_PROPOSALS: GameProposal[] = [
     geekId: '316554',
     drafts: [
       { id: 'd5-1', proposerId: 'u4', date: '2026-02-09', time: '20:00', location: 'Lorto', joinedUserIds: ['u4', 'u2'], maxPlayers: 4 },
-      { id: 'd5-2', proposerId: 'u12', date: '2026-02-11', time: '21:00', location: 'La Gilda', joinedUserIds: ['u12', 'u13', 'u14'], maxPlayers: 4 },
+      { id: 'd5-2', proposerId: 'u12', date: '2026-02-11', time: '21:00', location: 'Community Hub', joinedUserIds: ['u12', 'u13', 'u14'], maxPlayers: 4 },
       { id: 'd5-3', proposerId: 'u13', date: '2026-02-14', time: '16:00', location: 'Centro Costa', joinedUserIds: ['u13'], maxPlayers: 4 },
       { id: 'd5-4', proposerId: 'u2', date: '2026-02-16', time: '19:30', location: 'Bar Flora', joinedUserIds: ['u2', 'u4', 'u12'], maxPlayers: 4 }
     ],
@@ -394,7 +394,7 @@ export const MOCK_PROPOSALS: GameProposal[] = [
     drafts: [
       { id: 'd6-1', proposerId: 'u5', date: '2026-02-28', time: '22:00', location: 'Bar Flora', joinedUserIds: ['u5', 'u11'], maxPlayers: 4 },
       { id: 'd6-2', proposerId: 'u19', date: '2026-03-01', time: '21:15', location: 'Centro Costa', joinedUserIds: ['u19', 'u20', 'u5'], maxPlayers: 4 },
-      { id: 'd6-3', proposerId: 'u20', date: '2026-03-05', time: '20:30', location: 'La Gilda', joinedUserIds: ['u20'], maxPlayers: 4 }
+      { id: 'd6-3', proposerId: 'u20', date: '2026-03-05', time: '20:30', location: 'Community Hub', joinedUserIds: ['u20'], maxPlayers: 4 }
     ],
     userPreferences: {
       'u5': { gameName: 'Mork Borg' }, 'u11': { gameName: 'Mork Borg' },
