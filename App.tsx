@@ -42,6 +42,12 @@ const App: React.FC = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'compact'>('grid');
   const [showScrollTop, setShowScrollTop] = useState(false);
   
+  // Gestione sessione visita per etichetta NEW
+  const [lastVisitBoundary, setLastVisitBoundary] = useState<string>(() => {
+    const fallback = new Date(SIMULATED_NOW.getTime() - 24 * 60 * 60 * 1000).toISOString();
+    return fallback;
+  });
+
   const [currentUser, setCurrentUser] = useState<Player | null>(null);
 
   const [view, setView] = useState<View>('home');
@@ -70,6 +76,21 @@ const App: React.FC = () => {
   } | null>(null);
 
   useEffect(() => {
+    // Gestione confine temporale ultima visita
+    const storedLastVisit = localStorage.getItem('bbs_last_visit');
+    const nowIso = SIMULATED_NOW.toISOString();
+    
+    if (storedLastVisit) {
+      setLastVisitBoundary(storedLastVisit);
+    } else {
+      // Se è la prima volta assoluta, consideriamo nuove le cose delle ultime 24 ore
+      const defaultBoundary = new Date(SIMULATED_NOW.getTime() - 24 * 60 * 60 * 1000).toISOString();
+      setLastVisitBoundary(defaultBoundary);
+    }
+    
+    // Aggiorniamo immediatamente il localStorage per la prossima sessione
+    localStorage.setItem('bbs_last_visit', nowIso);
+
     const initData = async () => {
       setIsLoading(true);
       try {
@@ -433,13 +454,13 @@ const App: React.FC = () => {
       const matchesJoined = !advancedFilters.showOnlyJoined || (currentUser && t.currentPlayers.some(p => p.id === currentUser.id));
       const matchesLocation = !advancedFilters.locationSearch || t.location.toLowerCase().includes(advancedFilters.locationSearch.toLowerCase());
       const matchesDate = !advancedFilters.dateFrom || t.date >= advancedFilters.dateFrom;
-      const matchesNew = !advancedFilters.showOnlyNew || ((SIMULATED_NOW.getTime() - new Date(t.createdAt).getTime()) < 24 * 60 * 60 * 1000);
+      const matchesNew = !advancedFilters.showOnlyNew || (t.createdAt > lastVisitBoundary);
       return matchesSearch && matchesType && matchesFormat && matchesJoined && matchesLocation && matchesDate && matchesNew && (t.date >= TODAY_STR);
     });
     if (sortOption === 'creation') result.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
     else if (sortOption === 'session') result.sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
     return result;
-  }, [tables, search, advancedFilters, currentUser, sortOption]);
+  }, [tables, search, advancedFilters, currentUser, sortOption, lastVisitBoundary]);
 
   const groupedTables = useMemo(() => {
     if (groupOption === 'none') return { "Tutte": filteredTables };
@@ -462,12 +483,12 @@ const App: React.FC = () => {
       const matchesMyProp = !advancedFilters.showOnlyMyProposals || (currentUser && p.proposer?.id === currentUser.id);
       const matchesJoined = !advancedFilters.showOnlyJoined || (currentUser && p.interestedPlayerIds.includes(currentUser.id));
       const matchesFormat = advancedFilters.formatFilter === 'all' || (advancedFilters.formatFilter === 'campaign' && p.format === GameFormat.CAMPAIGN) || (advancedFilters.formatFilter === 'single' && p.format === GameFormat.SINGLE_PLAY) || (advancedFilters.formatFilter === 'tournament' && p.format === GameFormat.TOURNAMENT);
-      const matchesNew = !advancedFilters.showOnlyNew || ((SIMULATED_NOW.getTime() - new Date(p.createdAt).getTime()) < 24 * 60 * 60 * 1000);
+      const matchesNew = !advancedFilters.showOnlyNew || (p.createdAt > lastVisitBoundary);
       return matchesSearch && matchesType && matchesMyProp && matchesJoined && matchesFormat && matchesNew;
     });
     result.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
     return result;
-  }, [proposals, search, advancedFilters, currentUser]);
+  }, [proposals, search, advancedFilters, currentUser, lastVisitBoundary]);
 
   const groupedProposals = useMemo(() => {
     if (groupOption === 'none') return { "Tutte": filteredProposals };
@@ -580,6 +601,7 @@ const App: React.FC = () => {
                         onSelectMember={(id) => { setSelectedUserId(id); setView('profile'); }}
                         onViewDetail={(t) => { setSelectedTableId(t.id); setView('table-detail'); }}
                         viewMode={viewMode}
+                        lastVisitBoundary={lastVisitBoundary}
                       />
                     ))}
                   </div>
@@ -633,6 +655,7 @@ const App: React.FC = () => {
                           onSelectMember={(id) => { setSelectedUserId(id); setView('profile'); }}
                           onViewDetail={(p) => { setSelectedProposalId(p.id); setView('proposal-detail'); }}
                           viewMode={viewMode}
+                          lastVisitBoundary={lastVisitBoundary}
                         />
                       ))}
                     </div>
@@ -695,6 +718,7 @@ const App: React.FC = () => {
             onUpdateUser={handleUpdateUser}
             onViewTableDetail={(t) => { setSelectedTableId(t.id); setView('table-detail'); }}
             onViewProposalDetail={(p) => { setSelectedProposalId(p.id); setView('proposal-detail'); }}
+            lastVisitBoundary={lastVisitBoundary}
           />
         )}
 

@@ -16,6 +16,7 @@ interface GameCardProps {
   onViewDetail: (data: any) => void;
   index: number;
   viewMode?: 'grid' | 'compact';
+  lastVisitBoundary: string;
 }
 
 const GameCard: React.FC<GameCardProps> = ({ 
@@ -31,20 +32,19 @@ const GameCard: React.FC<GameCardProps> = ({
   onSelectMember,
   onViewDetail,
   index,
-  viewMode = 'grid'
+  viewMode = 'grid',
+  lastVisitBoundary
 }) => {
   const isTable = type === 'table';
   const table = isTable ? (data as GameTable) : null;
   const proposal = !isTable ? (data as GameProposal) : null;
 
   const isRPG = data.type === GameType.RPG;
-  const now = new Date();
-  const systemTimeMs = now.getTime();
   
+  // Logica 'NEW' basata sulla sessione (lastVisitBoundary)
   const isNew = useMemo(() => {
-    const created = new Date(data.createdAt).getTime();
-    return (systemTimeMs - created) < 24 * 60 * 60 * 1000;
-  }, [data.createdAt, systemTimeMs]);
+    return data.createdAt > lastVisitBoundary;
+  }, [data.createdAt, lastVisitBoundary]);
 
   const isJoined = isTable && currentUser ? table!.currentPlayers.some(p => p.id === currentUser.id) : false;
   const isHost = isTable && currentUser && table ? table.hostId === currentUser.id : false;
