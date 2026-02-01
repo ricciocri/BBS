@@ -213,10 +213,7 @@ const Header: React.FC<HeaderProps> = ({
 
                {user ? (
                  <button 
-                  onClick={(e) => {
-                    e.preventDefault();
-                    if (window.confirm("Sei sicuro di voler uscire?")) onLogout();
-                  }}
+                  onClick={onLogout}
                   className="w-10 h-10 rounded-xl bg-rose-950/20 hover:bg-rose-600/20 text-rose-400/70 hover:text-rose-400 border border-rose-500/10 hover:border-rose-500/30 transition-all flex items-center justify-center shadow-lg"
                   title="Esci"
                 >

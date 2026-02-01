@@ -76,20 +76,28 @@ const App: React.FC = () => {
   } | null>(null);
 
   useEffect(() => {
-    // Gestione confine temporale ultima visita
+    // 1. Gestione confine temporale ultima visita
     const storedLastVisit = localStorage.getItem('bbs_last_visit');
     const nowIso = SIMULATED_NOW.toISOString();
     
     if (storedLastVisit) {
       setLastVisitBoundary(storedLastVisit);
     } else {
-      // Se è la prima volta assoluta, consideriamo nuove le cose delle ultime 24 ore
       const defaultBoundary = new Date(SIMULATED_NOW.getTime() - 24 * 60 * 60 * 1000).toISOString();
       setLastVisitBoundary(defaultBoundary);
     }
-    
-    // Aggiorniamo immediatamente il localStorage per la prossima sessione
     localStorage.setItem('bbs_last_visit', nowIso);
+
+    // 2. Recupero sessione utente esistente
+    const savedUser = localStorage.getItem('bbs_session_user');
+    if (savedUser) {
+      try {
+        setCurrentUser(JSON.parse(savedUser));
+      } catch (e) {
+        console.error("Errore nel ripristino della sessione:", e);
+        localStorage.removeItem('bbs_session_user');
+      }
+    }
 
     const initData = async () => {
       setIsLoading(true);
@@ -145,6 +153,7 @@ const App: React.FC = () => {
       setAllUsers(prev => prev.map(u => u.id === updatedUser.id ? updatedUser : u));
       if (currentUser?.id === updatedUser.id) {
         setCurrentUser(updatedUser);
+        localStorage.setItem('bbs_session_user', JSON.stringify(updatedUser));
       }
     } catch (error) {
       console.error("Errore aggiornamento utente:", error);
@@ -214,17 +223,13 @@ const App: React.FC = () => {
       let updatedDrafts: DraftTable[] = [...prop.drafts];
 
       if (isAlreadyInterested) {
-        // Rimozione interesse
         updatedInterested = prop.interestedPlayerIds.filter(uid => uid !== currentUser.id);
         delete updatedPrefs[currentUser.id];
-        
-        // Coerenza logica: se tolgo l'interesse esco da tutte le bozze della proposta
         updatedDrafts = prop.drafts.map(draft => ({
           ...draft,
           joinedUserIds: draft.joinedUserIds.filter(uid => uid !== currentUser.id)
         }));
       } else {
-        // Aggiunta interesse
         updatedInterested = [...prop.interestedPlayerIds, currentUser.id];
         updatedPrefs[currentUser.id] = { gameName: prop.gameName };
       }
@@ -247,7 +252,6 @@ const App: React.FC = () => {
     if (prop) {
       let updatedProp = { ...prop, drafts: updatedDrafts };
 
-      // Automazione Workflow: Se l'utente partecipa a una bozza, gli interessa la proposta
       if (currentUser) {
         const isUserInAnyDraft = updatedDrafts.some(d => d.joinedUserIds.includes(currentUser.id));
         const isAlreadyInterested = prop.interestedPlayerIds.includes(currentUser.id);
@@ -513,6 +517,7 @@ const App: React.FC = () => {
   }
 
   const handleLogout = () => {
+    localStorage.removeItem('bbs_session_user');
     setCurrentUser(null);
     setSelectedUserId(null);
     setEditingTable(null);
@@ -789,6 +794,7 @@ const App: React.FC = () => {
           const user = allUsers.find(u => u.name === name);
           if (user) {
             setCurrentUser(user);
+            localStorage.setItem('bbs_session_user', JSON.stringify(user));
           }
           setIsAuthModalOpen(false);
         }} 
