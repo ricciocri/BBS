@@ -7,7 +7,8 @@ import { getGeekGameDetails } from '../services/geekService';
 
 interface ProposalFormProps {
   onCancel: () => void;
-  onSubmit: (proposal: Omit<GameProposal, 'id' | 'interestedPlayerIds' | 'createdAt' | 'proposer' | 'userPreferences' | 'clusterStatus'>) => void;
+  // Updated onSubmit to match App.tsx and omit 'drafts' which is not handled by the form
+  onSubmit: (proposal: Omit<GameProposal, 'id' | 'interestedPlayerIds' | 'createdAt' | 'proposer' | 'drafts' | 'userPreferences' | 'clusterStatus'>) => void;
   initialData?: Partial<GameProposal> | null;
 }
 
@@ -31,6 +32,7 @@ const ProposalForm: React.FC<ProposalFormProps> = ({ onCancel, onSubmit, initial
 
   const [error, setError] = useState('');
 
+  // Fixed logistical fields access by adding them to GameProposal interface in types.ts
   useEffect(() => {
     if (initialData) {
       setFormData(prev => ({
@@ -110,6 +112,7 @@ const ProposalForm: React.FC<ProposalFormProps> = ({ onCancel, onSubmit, initial
       return;
     }
 
+    // Fixed assignment as drafts is now omitted from required submit parameters
     onSubmit({ ...formData, title: formData.gameName || 'Idea di Gioco' });
   };
 

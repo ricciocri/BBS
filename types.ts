@@ -122,6 +122,11 @@ export interface GameProposal {
   // Added properties to match mock data and component usage
   userPreferences: Record<string, any>;
   clusterStatus: Record<string, any>;
+  // Logistical suggested fields for initial setup
+  date?: string;
+  time?: string;
+  location?: string;
+  system?: string;
 }
 
 export interface AppNotification {
